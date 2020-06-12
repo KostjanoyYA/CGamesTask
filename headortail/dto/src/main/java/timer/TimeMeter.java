@@ -3,7 +3,6 @@ package timer;
 public class TimeMeter {
     private long startTime;
     private long duration;
-    private long remainingTime;
 
     public TimeMeter(long duration)
     {
@@ -15,8 +14,7 @@ public class TimeMeter {
     }
 
     public void stopAndResetTimer(long newDuration) {
-        this.duration = newDuration;
-        remainingTime = this.duration;
+        this.duration = Math.abs(newDuration);
     }
 
     public void restartTimer() {

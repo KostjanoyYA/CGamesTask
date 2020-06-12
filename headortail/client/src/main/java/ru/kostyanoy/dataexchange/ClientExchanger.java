@@ -6,39 +6,74 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.kostyanoy.connection.*;
+import ru.kostyanoy.entity.PlayerState;
 import timer.TimeMeter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ClientExchanger implements Exchanger {
     private Connection connection;
-    private String nickName;
-    private long tokenCount;
-    private String[] participants;
-    TimeMeter timer;
+    private PlayerState playerState;
+    private String senderName;
+    private TimeMeter requestDelayTimer;
+    private TimeMeter responseDelayTimer;
+    private AtomicBoolean isRemoteAnswering;
+    private ObjectMapper mapper;
+    private ConcurrentHashMap<String, Request> sentRequestQueue;
+
     private static final Logger log = LoggerFactory.getLogger(ClientExchanger.class);
 
+    static {
+        Connection.customizeConnectionClass("connection.properties");
+    }
+
     public ClientExchanger() {
+        isRemoteAnswering.set(false);
         this.connection = new Connection();
-        tokenCount = new ArrayList<>();
-        participants = new String[0];
-        nickName = "";
-        timer = new TimeMeter(Connection.PING_TIMEOUT*2);
+        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT*4);
+        responseDelayTimer = new TimeMeter(Connection.PING_TIMEOUT*2);
+        mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        sentRequestQueue = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void startExchange() {
+
+        //playerState = new PlayerState();
+        //nickName = "";
+
+
+
+        Thread messageListenerThread = new Thread(() -> {
+            while (!Thread.interrupted() && isRemoteAnswering.get()) {
+                try {
+                    parseMessage();
+                } catch (IOException | InterruptedException e) {
+                    log.warn(e.getMessage(), e);
+                }
+            }
+            connection.disconnect();
+        });
+        messageListenerThread.start();
+
+        Thread serviceExchangeThread = new Thread(() -> {
+            serviceExchange();
+        });
+        serviceExchangeThread.start();
+
+
     }
 
     public Connection getConnection() {
         return connection;
     }
 
-    @Override
-    public String[] getParticipants() {
-        return participants;
-    }
+    public String[] getPlayerState() {
 
-    @Override
-    public String[] getIncomingMessages() {
+
         return tokenCount.toArray(new String[0]);
     }
 
@@ -48,6 +83,8 @@ public class ClientExchanger implements Exchanger {
         try {
             connection.getWriter().println(mapper.writeValueAsString(message));
             connection.getWriter().flush();
+            sentRequestQueue.put(message.getId(), (Request) message);
+            requestDelayTimer.restartTimer();
         } catch (JsonProcessingException e) {
             log.warn(e.getMessage(), e);
             return false;
@@ -55,64 +92,33 @@ public class ClientExchanger implements Exchanger {
         return true;
     }
 
-    public boolean sendMessage(String messageText) {
-        return sendMessage(new MessageSentByUser(nickName, messageText));
-    }
-
     @Override
-    public void resetMessages() {
+    public void clearUnansweredMessages() {
         tokenCount.clear();
     }
 
     @Override
-    public boolean hasCheckedNickName(String nickName) {
-        sendMessage(new MessageGreeting(nickName));
+    public boolean hasCheckedNickName(String nickName) { //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        while (isServerAnswering) {
+            sendMessage(new Request(nickName, MessageType.GREETING));
+        }
+
         try {
             parseMessage();
         } catch (IOException | InterruptedException e) {
             log.warn(e.getMessage(), e);
             return false;
         }
-        if (this.nickName.isEmpty()) {
+        if (this.senderName.isEmpty()) {
             return false;
         }
         startExchange();
         return true;
     }
 
-    @Override
-    public void startExchange() {
-        Thread messageListenerThread = new Thread(() -> {
-            while (!Thread.interrupted() && isServerReachable) {
-                try {
-                    parseMessage();
-
-                } catch (IOException | InterruptedException e) {
-                    log.warn(e.getMessage(), e);
-                }
-            }
-            connection.disconnect();
-        });
-        messageListenerThread.start();
-        sendMessage(new MessageService(nickName));
-
-        Thread connectionCheckerThread = new Thread(() -> { //TODO Сделать поток отправки сервисных сообщений
-            while (!Thread.interrupted() && isServerReachable) {
-                try {
-                    parseMessage();
-
-                } catch (IOException | InterruptedException e) {
-                    log.warn(e.getMessage(), e);
-                }
-            }
-            connection.disconnect();
-        });
-
-
-    }
-
     public void stopExchange() {
-        sendMessage(new MessageGoodbye(nickName));
+        sendMessage(new MessageGoodbye(senderName));
 
         try {
             Thread.sleep(Connection.PING_TIMEOUT * 2);
@@ -123,57 +129,91 @@ public class ClientExchanger implements Exchanger {
     }
 
     @Override
-    public boolean checkConnection() { //TODO Логика проверки соединения, для сервера тоже
-        if (!connection.isConnected()) { return false; }
-
-        if (!timer.hasTimesUp()) {
-            return true;
+    public void serviceExchange() { //TODO Логика проверки соединения, для сервера тоже
+        if (!connection.isConnected()) {
+            isRemoteAnswering.set(false);
+            return;
         }
-        sendMessage(new MessageService(nickName));
-        timer.restartTimer();
-        return false;
+
+        sendMessage(new Request(senderName, MessageType.SERVICE, 0));
+
+        while (!responseDelayTimer.hasTimesUp()) {
+
+            // Не нужен response timer. Нужно только фиксированное время ожидания, т.к. время отправки есть в отправленном сообщении
+            //TODO Пробежаться по мапе и проверить ниличие ждущих ответа запросов.
+            //TODO Если таких нет, то проверить, не закончилось ли время
+
+            while (!requestDelayTimer.hasTimesUp()) {
+
+
+                try {
+                    Thread.sleep(Connection.PING_TIMEOUT);
+                    if (isRemoteAnswering.get()) {
+                        return;
+                    }
+                } catch (InterruptedException e) {
+                    log.warn(e.getMessage(), e);
+                }
+            }
+        }
+        isRemoteAnswering.set(false);
+        return;
+    }
+
+    //TODO Проверка списка сообщений на "протухшие" сообщения, т.е. время жизни вышло, а ответа так и нет
+
+    private void NNN() {
+
     }
 
     private void parseMessage() throws IOException, InterruptedException {
         while (!connection.getReader().ready()) {
-            Thread.sleep(Connection.PING_TIMEOUT);
+            Thread.sleep(Connection.PING_TIMEOUT >> 2);
         }
 
-
-        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         String jsonMessage = connection.getReader().readLine();
         Message incomingMessage = mapper.readValue(jsonMessage, Message.class);
-        if ((incomingMessage == null) || (incomingMessage.getMessages() == null)) {
+
+        if ((incomingMessage == null)) { return; }
+
+        log.info("{}: Have got {}", senderName, incomingMessage.getClass().getSimpleName());
+
+        if (incomingMessage instanceof Request) {
+
+            log.info("{}: sent request. Requests are not supported", senderName);
             return;
         }
 
-        log.info("{}: Have got {}", nickName, incomingMessage.getClass().getSimpleName());
+        Response response;
+        if (incomingMessage instanceof Response) {
+            response = (Response)incomingMessage;
+        }
+        else {
+            return;
+        }
 
-        if (incomingMessage instanceof MessageGreeting) {
-            if (incomingMessage.getMessages()[0].equals(MessageGreeting.HELLO)) {
-                nickName = incomingMessage.getMessages()[1];
-            } else {
-                nickName = "";
-            }
-            log.info("{}: {} said {}", nickName, incomingMessage.getSenderName(), incomingMessage.getMessages()[0]);
-            return;
+        //TODO сверить с id отправленного, после обработки ответа удалить его из списка направленных пакетов
+
+        switch (response.getType()) {
+            case SERVICE ->
         }
-        if (incomingMessage instanceof MessageGoodbye) {
-            stopExchange();
-            return;
-        }
+
+
+        stopExchange();
+        return;
+
         if (incomingMessage instanceof MessageParticipants) {
             participants = incomingMessage.getMessages().clone();
-            log.info("{}: participants are updated:\n{}", nickName, Arrays.toString(participants));
+            log.info("{}: participants are updated:\n{}", senderName, Arrays.toString(participants));
             return;
         }
         if (incomingMessage instanceof MessageSentByUser) {
             tokenCount.addAll(Arrays.asList(incomingMessage.getMessages()));
-            log.info("{}: messages are updated:\n{}", nickName, tokenCount.toString());
+            log.info("{}: messages are updated:\n{}", senderName, tokenCount.toString());
         }
         if (incomingMessage instanceof MessageService) {
-            log.info("{}: Have got service message:\n{}", nickName, incomingMessage.getMessages());
-            checkConnection();
+            log.info("{}: Have got service message:\n{}", senderName, incomingMessage.getMessages());
+            serviceExchange();
         }
     }
 }

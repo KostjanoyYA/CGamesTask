@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.kostyanoy.connection.*;
+import ru.kostyanoy.connection.Connection;
+import ru.kostyanoy.connection.Exchanger;
+import ru.kostyanoy.connection.Message;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -101,7 +103,7 @@ public class ServerExchanger implements Exchanger {
     }
 
     @Override
-    public void resetMessages() {
+    public void clearUnansweredMessages() {
         messages.clear();
     }
 
@@ -188,7 +190,7 @@ public class ServerExchanger implements Exchanger {
             Message outgoing = new MessageSentByUser(nickName, messages.toArray(new String[0]));
             sendMessage(outgoing);
             log.info("{}: Sent messages {}", nickName, messages.toString());
-            resetMessages();
+            clearUnansweredMessages();
 
             try {
                 Thread.sleep(TIMEOUT >> 2);

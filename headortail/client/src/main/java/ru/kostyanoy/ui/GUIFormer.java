@@ -159,7 +159,7 @@ public class GUIFormer implements VisualPresenter {
             for (String message : newMessages) {
                 outputTextArea.append(message + "\n");
             }
-            exchanger.resetMessages();
+            exchanger.clearUnansweredMessages();
 
             try {
                 Thread.sleep(REFRASH_TIMEOUT);
