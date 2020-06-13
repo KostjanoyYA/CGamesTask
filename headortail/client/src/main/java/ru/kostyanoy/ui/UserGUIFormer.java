@@ -2,28 +2,24 @@ package ru.kostyanoy.ui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.kostyanoy.connection.Exchanger;
 import ru.kostyanoy.dataexchange.ClientExchanger;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.Arrays;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
-public class GUIFormer implements VisualPresenter {
+public class UserGUIFormer implements VisualPresenter {
 
     private JFrame frame;
-    private JTextArea outputTextArea;
-    private String name = "OpeChatCo";
-    private String fullName = "The Open Chat for Cooperation";
-    private Exchanger exchanger;
-    private static final int REFRASH_TIMEOUT = 2000;
-    private static final Logger log = LoggerFactory.getLogger(GUIFormer.class);
+    private final String name = "Heads and tails client";
+    private final ClientExchanger exchanger;
+    private static final int REFRESH_TIMEOUT = 2000;
+    private static final Logger log = LoggerFactory.getLogger(UserGUIFormer.class);
 
-    public GUIFormer(Exchanger exchanger) {
+    public UserGUIFormer(ClientExchanger exchanger) {
         this.exchanger = exchanger;
     }
 
@@ -31,7 +27,7 @@ public class GUIFormer implements VisualPresenter {
     public void createMainWindow() throws ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
         javax.swing.UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
-        frame = new JFrame(name + " - " + fullName);
+        frame = new JFrame(name);
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.setMinimumSize(new Dimension(640, 480));
         frame.setLocationByPlatform(true);
@@ -83,9 +79,9 @@ public class GUIFormer implements VisualPresenter {
 
         //Output
         JPanel outputPanel = new JPanel();
-        frame.add(outputPanel, BorderLayout.CENTER);
+        frame.add(outputPanel, BorderLayout.SOUTH);
         outputPanel.setLayout(new BorderLayout());
-        outputTextArea = new JTextArea(name + " started\n\n");
+        JTextArea outputTextArea = new JTextArea(name + " started\n\nРезультат:\n");
         outputTextArea.setEditable(false);
         JScrollPane outputTextScrolls = new JScrollPane(outputTextArea);
 
@@ -95,79 +91,49 @@ public class GUIFormer implements VisualPresenter {
         outputTextScrolls.createHorizontalScrollBar();
         outputTextScrolls.createVerticalScrollBar();
 
-        //Input
+        //Right panel
         JPanel inputPanel = new JPanel();
-        frame.add(inputPanel, BorderLayout.SOUTH);
+        frame.add(inputPanel, BorderLayout.EAST);
         inputPanel.setLayout(new BorderLayout());
-        JTextArea inputTextArea = new JTextArea("Enter your message here");
-        JScrollPane inputTextScrolls = new JScrollPane(inputTextArea);
 
-        inputPanel.add(inputTextScrolls, BorderLayout.CENTER);
-        inputTextScrolls.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        inputTextScrolls.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        inputTextScrolls.createHorizontalScrollBar();
-        inputTextScrolls.createVerticalScrollBar();
-        JButton sendButton = new JButton("Send");
-        sendButton.setMinimumSize(new Dimension(30, 60));
-        sendButton.setFocusable(false);
-        sendButton.addActionListener(e -> {
-            if (inputTextArea.getText().isEmpty()) {
-                return;
-            }
-            String messageText = inputTextArea.getText();
-            outputTextArea.append("\nYour message:\n" + messageText + "\n");
-            inputTextArea.replaceRange("", 0, inputTextArea.getText().length());
-            exchanger.sendMessage(messageText);
-        });
+        JTextField betField = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
+        betField.setText("1");
+        inputPanel.add(betField, BorderLayout.PAGE_START);
 
-        inputPanel.add(sendButton, BorderLayout.EAST);
+        //Left panel
+        JPanel labelPanel = new JPanel();
+        frame.add(labelPanel, BorderLayout.WEST);
+        labelPanel.setLayout(new BorderLayout());
 
-        //List of participants
-        JPanel participantsPanel = new JPanel();
-        frame.add(participantsPanel, BorderLayout.WEST);
-        participantsPanel.setLayout(new BorderLayout());
-        DefaultListModel<String> listModel = new DefaultListModel<>();
-        JList<String> participantList = new JList<>(listModel);
-        participantList.setPrototypeCellValue("0123456789101112131415");
-        participantList.setLayoutOrientation(JList.VERTICAL);
+        JLabel betLabel = new JLabel("Enter your bet here:");
+        labelPanel.add(betLabel, BorderLayout.PAGE_START);
 
+        JLabel accountLabel = new JLabel("Your account");
+        labelPanel.add(accountLabel, BorderLayout.LINE_END);
 
-        JScrollPane participantsTextScrolls = new JScrollPane(participantList);
+        //Start button
+        JButton makeBetButton = new JButton("Make a bet");
+        makeBetButton.setMinimumSize(new Dimension(30, 60));
+        makeBetButton.setFocusable(false);
+        makeBetButton.addActionListener(e -> exchanger.sendStake(Math.abs(Long.parseLong(betField.getText()))));
 
-        participantsPanel.add(participantsTextScrolls);
-        participantsTextScrolls.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        participantsTextScrolls.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        participantsTextScrolls.createHorizontalScrollBar();
-        participantsTextScrolls.createVerticalScrollBar();
+        inputPanel.add(makeBetButton, BorderLayout.NORTH);
 
         //Window
         frame.setResizable(false);
         frame.pack();
         frame.setVisible(true);
 
-        String[] newParticipantList;
-        String[] newMessages;
-        while (((ClientExchanger) exchanger).getConnection().isConnected()) {
-            newParticipantList = exchanger.getParticipants().clone();
-            Arrays.sort(newParticipantList);
-            listModel.clear();
-            for (String participant : newParticipantList) {
-                listModel.addElement(participant);
-            }
-
-            newMessages = exchanger.getIncomingMessages().clone();
-            for (String message : newMessages) {
-                outputTextArea.append(message + "\n");
-            }
-            exchanger.clearUnansweredMessages();
-
+        while (exchanger.isGameAllowed()) {
+            accountLabel.setText(String.valueOf(exchanger.getPlayerState().getTokenCount()));
             try {
-                Thread.sleep(REFRASH_TIMEOUT);
+                Thread.sleep(REFRESH_TIMEOUT);
             } catch (InterruptedException e) {
                 log.warn(e.getMessage(), e);
             }
         }
     }
+
 
     //PopUps
     @Override

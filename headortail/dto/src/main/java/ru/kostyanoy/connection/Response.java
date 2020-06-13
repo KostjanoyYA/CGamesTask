@@ -3,6 +3,7 @@ package ru.kostyanoy.connection;
 public class Response extends Message {
 
     private Status status;
+    private String message;
 
     public Response(String senderName, MessageType type, Status status, long tokens) {
         super(senderName, type, tokens);
@@ -15,5 +16,13 @@ public class Response extends Message {
 
     public Status getStatus() {
         return status;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

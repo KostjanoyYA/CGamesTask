@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ClientExchanger implements Exchanger {
+public class ClientExchanger {
     private final Connection connection;
     private final PlayerState playerState;
     private String senderName;
@@ -48,7 +48,7 @@ public class ClientExchanger implements Exchanger {
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         sentRequestMap = new ConcurrentHashMap<>();
         expiredRequestMap = new ConcurrentHashMap<>();
-        playerState = new PlayerState(0,"");
+        playerState = new PlayerState(0, "");
         statistics = Optional.empty();
         internalStatistics = new ClientStatistics();
     }
@@ -57,7 +57,7 @@ public class ClientExchanger implements Exchanger {
         return isGameAllowed;
     }
 
-    @Override
+
     public void startExchange() {
         messageListenerThread = new Thread(() -> {
             while (!Thread.interrupted() && isRemoteAnswering.get()) {
@@ -71,8 +71,14 @@ public class ClientExchanger implements Exchanger {
         });
         messageListenerThread.start();
 
-        serviceExchangeThread = new Thread(this::serviceExchange);
+        serviceExchangeThread = new Thread(this::checkExchange);
         serviceExchangeThread.start();
+
+        sleep(Connection.PING_TIMEOUT * 2);
+        while (!isGameAllowed && isRemoteAnswering.get()) {
+            askGamePermission();
+            sleep(Connection.PING_TIMEOUT * 2);
+        }
     }
 
     public Connection getConnection() {
@@ -87,9 +93,8 @@ public class ClientExchanger implements Exchanger {
         return statistics;
     }
 
-    @Override
+
     public boolean sendMessage(Message message) {
-        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         try {
             connection.getWriter().println(mapper.writeValueAsString(message));
             connection.getWriter().flush();
@@ -110,7 +115,6 @@ public class ClientExchanger implements Exchanger {
         }
     }
 
-    @Override
     public boolean hasCheckedNickName(String nickName) {
         while (isRemoteAnswering.get()) {
             if (!isSenderNameAccepted.get()) {
@@ -130,12 +134,15 @@ public class ClientExchanger implements Exchanger {
 
         serviceExchangeThread.interrupt();
         messageListenerThread.interrupt();
+        isRemoteAnswering.set(false);
+        isGameAllowed = false;
         connection.disconnect();
-        statistics = Optional.of(internalStatistics);
+        if (internalStatistics != null) {
+            statistics = Optional.of(internalStatistics);
+        }
     }
 
-    @Override
-    public void serviceExchange() { //TODO Логика проверки соединения, для сервера тоже
+    public void checkExchange() {
         if (!connection.isConnected()) {
             isRemoteAnswering.set(false);
             return;
@@ -158,8 +165,16 @@ public class ClientExchanger implements Exchanger {
         stopExchange();
     }
 
-    public void askGamePermission() {
-        sendMessage(new Request(senderName, MessageType.GAMEPERMISSION, playerState.getTokenCount()));
+    private void askGamePermission() {
+        if (isRemoteAnswering.get() && isSenderNameAccepted.get() && !isGameAllowed) {
+            sendMessage(new Request(senderName, MessageType.GAMEPERMISSION, playerState.getTokenCount()));
+        }
+    }
+
+    public void sendStake(long stake) {
+        if (isRemoteAnswering.get() && isSenderNameAccepted.get() && isGameAllowed && stake > 0) {
+            sendMessage(new Request(senderName, MessageType.GAMEPERMISSION, stake));
+        }
     }
 
     private void parseMessage() throws IOException {
@@ -185,7 +200,7 @@ public class ClientExchanger implements Exchanger {
         if (incomingMessage instanceof Response) {
             response = (Response) incomingMessage;
         } else {
-            log.warn("{} sent unsupported type message", incomingMessage.getSenderName());
+            log.warn("{} sent unsupported type of message", incomingMessage.getSenderName());
             return;
         }
 
@@ -202,8 +217,8 @@ public class ClientExchanger implements Exchanger {
         switch (response.getType()) {
             case GREETING -> {
                 senderName = (response.getStatus() == Status.ACCEPTED)
-                    ? sentRequestMap.get(response.getId()).getSenderName()
-                    : null;
+                        ? sentRequestMap.get(response.getId()).getSenderName()
+                        : null;
                 isSenderNameAccepted.set(true);
                 setPlayerState(response);
             }
@@ -211,11 +226,21 @@ public class ClientExchanger implements Exchanger {
             case STAKE -> {
                 if (response.getStatus() == Status.ACCEPTED) {
                     setPlayerState(response);
+                } else {
+                    log.info("{} rejected {}, message: {}",
+                            response.getSenderName(),
+                            response.getType(),
+                            response.getMessage());
                 }
             }
             case GAMEPERMISSION -> {
                 setPlayerState(response);
-                isGameAllowed = response.getStatus() == Status.ACCEPTED;
+                if (!(isGameAllowed = response.getStatus() == Status.ACCEPTED)) {
+                    log.info("{} rejected {}, message: {}",
+                            response.getSenderName(),
+                            response.getType(),
+                            response.getMessage());
+                }
             }
             case GOODBYE -> {
                 isRemoteAnswering.set(false);
@@ -223,7 +248,7 @@ public class ClientExchanger implements Exchanger {
             }
             case SERVICE -> setPlayerState(response);
 
-            default -> log.warn("{} sent unexpected response type: {}", incomingMessage.getSenderName(), response);
+            default -> log.warn("{} sent unexpected response type: {}", response.getSenderName(), response);
         }
 
         internalStatistics.addSuccessfulRequestsByResponse(response);
@@ -257,7 +282,7 @@ public class ClientExchanger implements Exchanger {
         }
 
         public long getAverageRequestTime() {
-            return totalTime/successfulRequestCount;
+            return totalTime / successfulRequestCount;
         }
 
         public String getUsername() {

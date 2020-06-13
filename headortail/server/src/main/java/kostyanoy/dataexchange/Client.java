@@ -1,12 +1,14 @@
 package kostyanoy.dataexchange;
 
+import kostyanoy.game.Player;
 import ru.kostyanoy.connection.Connection;
 
-public class ChatClient {
+public class Client {
     private Connection connection;
     private String nickName;
+    private Player player;
 
-    public ChatClient(Connection connection) {
+    public Client(Connection connection) {
         this.connection = connection;
     }
 
@@ -20,5 +22,13 @@ public class ChatClient {
 
     public String getNickName() {
         return nickName;
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public void setPlayer(Player player) {
+        this.player = player;
     }
 }
