@@ -4,6 +4,6 @@ public enum MessageType {
     GREETING,
     GOODBYE,
     STAKE,
-    PLAYERSTATE,
+    GAMEPERMISSION,
     SERVICE
 }

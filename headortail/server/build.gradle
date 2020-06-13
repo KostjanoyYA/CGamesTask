@@ -4,18 +4,20 @@ plugins {
 
 version 'unspecified'
 
-sourceCompatibility = 1.11
+sourceCompatibility = 1.14
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    testCompile 'org.junit.jupiter:junit-jupiter:5.5.2'
-    testCompile 'org.mockito:mockito-core:3.1.0'
     implementation project(":headortail:dto")
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.1'
     implementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
+
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.0-M1'
+    testCompile 'org.mockito:mockito-core:3.3.3'
+
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     runtime group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
     compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.7.25'

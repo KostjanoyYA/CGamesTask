@@ -24,6 +24,8 @@ public class Main {
         }
         gui.showMessage("Successful connection to the server");
 
+        client.startExchange();
+
         while (!client.hasCheckedNickName(gui.askNickName())) {
             gui.askExit("This nickname is busy. Try again?");
         }
@@ -33,6 +35,12 @@ public class Main {
             gui.createMainWindow();
         } catch (ClassNotFoundException | UnsupportedLookAndFeelException | InstantiationException | IllegalAccessException e) {
             log.warn(e.getMessage(), e);
+        }
+
+        ((ClientExchanger) client).askGamePermission();
+        while (((ClientExchanger) client).isGameAllowed()) {
+            //TODO игру здесь помести. Сервер отвечает за правила (начало и конец игры)
+            ((ClientExchanger) client).getPlayerState(); //TODO Перенести в класс игры или view
         }
     }
 

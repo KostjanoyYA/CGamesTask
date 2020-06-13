@@ -10,19 +10,25 @@ import ru.kostyanoy.entity.PlayerState;
 import timer.TimeMeter;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.time.ZoneId;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ClientExchanger implements Exchanger {
-    private Connection connection;
-    private PlayerState playerState;
+    private final Connection connection;
+    private final PlayerState playerState;
     private String senderName;
-    private TimeMeter requestDelayTimer;
-    private TimeMeter responseDelayTimer;
-    private AtomicBoolean isRemoteAnswering;
-    private ObjectMapper mapper;
-    private ConcurrentHashMap<String, Request> sentRequestQueue;
+    private final TimeMeter requestDelayTimer;
+    private final long responseDelay;
+    private final AtomicBoolean isRemoteAnswering;
+    private final AtomicBoolean isSenderNameAccepted;
+    private boolean isGameAllowed;
+    private final ObjectMapper mapper;
+    private final ConcurrentHashMap<String, Request> sentRequestMap;
+    private final ConcurrentHashMap<String, Request> expiredRequestMap;
+    private final ConcurrentHashMap<String, Request> successfulRequestMap;
+    Thread messageListenerThread;
+    Thread serviceExchangeThread;
 
     private static final Logger log = LoggerFactory.getLogger(ClientExchanger.class);
 
@@ -31,27 +37,30 @@ public class ClientExchanger implements Exchanger {
     }
 
     public ClientExchanger() {
-        isRemoteAnswering.set(false);
+        isRemoteAnswering = new AtomicBoolean(false);
+        isSenderNameAccepted = new AtomicBoolean(false);
+        isGameAllowed = false;
         this.connection = new Connection();
-        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT*4);
-        responseDelayTimer = new TimeMeter(Connection.PING_TIMEOUT*2);
+        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT * 4);
+        responseDelay = Connection.PING_TIMEOUT * 2;
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        sentRequestQueue = new ConcurrentHashMap<>();
+        sentRequestMap = new ConcurrentHashMap<>();
+        expiredRequestMap = new ConcurrentHashMap<>();
+        successfulRequestMap = new ConcurrentHashMap<>();
+        playerState = new PlayerState(0,"");
+    }
+
+    public boolean isGameAllowed() {
+        return isGameAllowed;
     }
 
     @Override
     public void startExchange() {
-
-        //playerState = new PlayerState();
-        //nickName = "";
-
-
-
-        Thread messageListenerThread = new Thread(() -> {
+        messageListenerThread = new Thread(() -> {
             while (!Thread.interrupted() && isRemoteAnswering.get()) {
                 try {
                     parseMessage();
-                } catch (IOException | InterruptedException e) {
+                } catch (IOException e) {
                     log.warn(e.getMessage(), e);
                 }
             }
@@ -59,22 +68,16 @@ public class ClientExchanger implements Exchanger {
         });
         messageListenerThread.start();
 
-        Thread serviceExchangeThread = new Thread(() -> {
-            serviceExchange();
-        });
+        serviceExchangeThread = new Thread(this::serviceExchange);
         serviceExchangeThread.start();
-
-
     }
 
     public Connection getConnection() {
         return connection;
     }
 
-    public String[] getPlayerState() {
-
-
-        return tokenCount.toArray(new String[0]);
+    public PlayerState getPlayerState() {
+        return playerState;
     }
 
     @Override
@@ -83,7 +86,7 @@ public class ClientExchanger implements Exchanger {
         try {
             connection.getWriter().println(mapper.writeValueAsString(message));
             connection.getWriter().flush();
-            sentRequestQueue.put(message.getId(), (Request) message);
+            sentRequestMap.put(message.getId(), (Request) message);
             requestDelayTimer.restartTimer();
         } catch (JsonProcessingException e) {
             log.warn(e.getMessage(), e);
@@ -92,39 +95,34 @@ public class ClientExchanger implements Exchanger {
         return true;
     }
 
-    @Override
-    public void clearUnansweredMessages() {
-        tokenCount.clear();
+    private void sleep(int timeout) {
+        try {
+            Thread.sleep(Math.abs(timeout));
+        } catch (InterruptedException e) {
+            log.warn(e.getMessage(), e);
+        }
     }
 
     @Override
-    public boolean hasCheckedNickName(String nickName) { //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        while (isServerAnswering) {
-            sendMessage(new Request(nickName, MessageType.GREETING));
+    public boolean hasCheckedNickName(String nickName) {
+        while (isRemoteAnswering.get()) {
+            if (!isSenderNameAccepted.get()) {
+                sendMessage(new Request(nickName, MessageType.GREETING, 0));
+            }
+            sleep(Connection.PING_TIMEOUT * 2);
         }
 
-        try {
-            parseMessage();
-        } catch (IOException | InterruptedException e) {
-            log.warn(e.getMessage(), e);
-            return false;
-        }
-        if (this.senderName.isEmpty()) {
-            return false;
-        }
+
         startExchange();
         return true;
     }
 
     public void stopExchange() {
-        sendMessage(new MessageGoodbye(senderName));
+        sendMessage(new Request(senderName, MessageType.GOODBYE, playerState.getTokenCount()));
+        sleep(Connection.PING_TIMEOUT * 3);
 
-        try {
-            Thread.sleep(Connection.PING_TIMEOUT * 2);
-        } catch (InterruptedException e) {
-            log.warn(e.getMessage(), e);
-        }
+        serviceExchangeThread.interrupt();
+        messageListenerThread.interrupt();
         connection.disconnect();
     }
 
@@ -135,85 +133,107 @@ public class ClientExchanger implements Exchanger {
             return;
         }
 
-        sendMessage(new Request(senderName, MessageType.SERVICE, 0));
+        sendMessage(new Request(senderName, MessageType.SERVICE, playerState.getTokenCount()));
 
-        while (!responseDelayTimer.hasTimesUp()) {
-
-            // Не нужен response timer. Нужно только фиксированное время ожидания, т.к. время отправки есть в отправленном сообщении
-            //TODO Пробежаться по мапе и проверить ниличие ждущих ответа запросов.
-            //TODO Если таких нет, то проверить, не закончилось ли время
-
-            while (!requestDelayTimer.hasTimesUp()) {
-
-
-                try {
-                    Thread.sleep(Connection.PING_TIMEOUT);
-                    if (isRemoteAnswering.get()) {
-                        return;
-                    }
-                } catch (InterruptedException e) {
-                    log.warn(e.getMessage(), e);
+        while (!requestDelayTimer.hasTimesUp()) { //Ждать, пока не пройдёт время ожидания. Время ожидания сбрасывается при получении сообщения
+            sleep(Connection.PING_TIMEOUT >> 1);
+            sentRequestMap.forEach((key, value) -> {
+                if ((System.nanoTime()
+                        - value.getSendTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                        >= responseDelay) {
+                    log.info("Request expired: {}", sentRequestMap.get(key));
+                    expiredRequestMap.put(key, value);
+                    sentRequestMap.remove(key);
                 }
-            }
+            });
         }
-        isRemoteAnswering.set(false);
-        return;
+        stopExchange();
     }
 
-    //TODO Проверка списка сообщений на "протухшие" сообщения, т.е. время жизни вышло, а ответа так и нет
-
-    private void NNN() {
-
+    public void askGamePermission() {
+        sendMessage(new Request(senderName, MessageType.GAMEPERMISSION, playerState.getTokenCount()));
     }
 
-    private void parseMessage() throws IOException, InterruptedException {
+    private void parseMessage() throws IOException {
         while (!connection.getReader().ready()) {
-            Thread.sleep(Connection.PING_TIMEOUT >> 2);
+            sleep(Connection.PING_TIMEOUT >> 2);
         }
 
         String jsonMessage = connection.getReader().readLine();
         Message incomingMessage = mapper.readValue(jsonMessage, Message.class);
 
-        if ((incomingMessage == null)) { return; }
+        if ((incomingMessage == null)) {
+            return;
+        }
 
         log.info("{}: Have got {}", senderName, incomingMessage.getClass().getSimpleName());
 
         if (incomingMessage instanceof Request) {
-
-            log.info("{}: sent request. Requests are not supported", senderName);
+            log.info("{} sent request. Requests from server are not supported", incomingMessage.getSenderName());
             return;
         }
 
         Response response;
         if (incomingMessage instanceof Response) {
-            response = (Response)incomingMessage;
-        }
-        else {
+            response = (Response) incomingMessage;
+        } else {
+            log.warn("{} sent unsupported type message", incomingMessage.getSenderName());
             return;
         }
 
-        //TODO сверить с id отправленного, после обработки ответа удалить его из списка направленных пакетов
+        if (!sentRequestMap.containsKey(response.getId())) {
+            log.warn("{} sent unrequested response: {}", incomingMessage.getSenderName(), response);
+            return;
+        }
+
+        if (expiredRequestMap.containsKey(response.getId())) {
+            log.warn("{} sent expired response: {}", incomingMessage.getSenderName(), response);
+            return;
+        }
 
         switch (response.getType()) {
-            case SERVICE ->
-        }
+            case GREETING -> {
+                senderName = (response.getStatus() == Status.ACCEPTED)
+                    ? sentRequestMap.get(response.getId()).getSenderName()
+                    : null;
+                isSenderNameAccepted.set(true);
+                setPlayerState(response);
+            }
 
+            case STAKE -> {
+                if (response.getStatus() == Status.ACCEPTED) {
+                    setPlayerState(response);
+                }
+            }
+            case GAMEPERMISSION -> {
+                setPlayerState(response);
+                isGameAllowed = response.getStatus() == Status.ACCEPTED;
+            }
+            case GOODBYE -> {
+                isRemoteAnswering.set(false);
+                requestDelayTimer.stopAndResetTimer(0);
+            }
+            case SERVICE -> setPlayerState(response);
 
-        stopExchange();
-        return;
+            default -> log.warn("{} sent unexpected response type: {}", incomingMessage.getSenderName(), response);
+        }
+        successfulRequestMap.put(sentRequestMap.get(response.getId()).
 
-        if (incomingMessage instanceof MessageParticipants) {
-            participants = incomingMessage.getMessages().clone();
-            log.info("{}: participants are updated:\n{}", senderName, Arrays.toString(participants));
-            return;
-        }
-        if (incomingMessage instanceof MessageSentByUser) {
-            tokenCount.addAll(Arrays.asList(incomingMessage.getMessages()));
-            log.info("{}: messages are updated:\n{}", senderName, tokenCount.toString());
-        }
-        if (incomingMessage instanceof MessageService) {
-            log.info("{}: Have got service message:\n{}", senderName, incomingMessage.getMessages());
-            serviceExchange();
-        }
+                getId(), sentRequestMap.
+
+                get(response.getId()));
+        sentRequestMap.remove(response.getId());
+        requestDelayTimer.restartTimer();
+        //TODO Статистика подсчёта успешных ответов и времени выполнения запросов
+
     }
+
+    private void setPlayerState(Response response) {
+        playerState.setTokenCount(isSenderNameAccepted.get()
+                ? response.getTokens()
+                : playerState.getTokenCount());
+    }
+
+    //TODO Класс для подсчёта статистики внутри Exchanger'а: Пользователь | Успешные запросы | Неуспешные запросы | Среднее время запроса
+    //Неуспешные ответы считать по expiredRequestMap
 }
