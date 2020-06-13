@@ -11,6 +11,7 @@ import timer.TimeMeter;
 
 import java.io.IOException;
 import java.time.ZoneId;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,9 +27,10 @@ public class ClientExchanger implements Exchanger {
     private final ObjectMapper mapper;
     private final ConcurrentHashMap<String, Request> sentRequestMap;
     private final ConcurrentHashMap<String, Request> expiredRequestMap;
-    private final ConcurrentHashMap<String, Request> successfulRequestMap;
-    Thread messageListenerThread;
-    Thread serviceExchangeThread;
+    private Thread messageListenerThread;
+    private Thread serviceExchangeThread;
+    private Optional<ClientStatistics> statistics;
+    private final ClientStatistics internalStatistics;
 
     private static final Logger log = LoggerFactory.getLogger(ClientExchanger.class);
 
@@ -46,8 +48,9 @@ public class ClientExchanger implements Exchanger {
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         sentRequestMap = new ConcurrentHashMap<>();
         expiredRequestMap = new ConcurrentHashMap<>();
-        successfulRequestMap = new ConcurrentHashMap<>();
         playerState = new PlayerState(0,"");
+        statistics = Optional.empty();
+        internalStatistics = new ClientStatistics();
     }
 
     public boolean isGameAllowed() {
@@ -78,6 +81,10 @@ public class ClientExchanger implements Exchanger {
 
     public PlayerState getPlayerState() {
         return playerState;
+    }
+
+    public Optional<ClientStatistics> getStatistics() {
+        return statistics;
     }
 
     @Override
@@ -124,6 +131,7 @@ public class ClientExchanger implements Exchanger {
         serviceExchangeThread.interrupt();
         messageListenerThread.interrupt();
         connection.disconnect();
+        statistics = Optional.of(internalStatistics);
     }
 
     @Override
@@ -135,10 +143,10 @@ public class ClientExchanger implements Exchanger {
 
         sendMessage(new Request(senderName, MessageType.SERVICE, playerState.getTokenCount()));
 
-        while (!requestDelayTimer.hasTimesUp()) { //Ждать, пока не пройдёт время ожидания. Время ожидания сбрасывается при получении сообщения
+        while (!requestDelayTimer.hasTimesUp()) {
             sleep(Connection.PING_TIMEOUT >> 1);
             sentRequestMap.forEach((key, value) -> {
-                if ((System.nanoTime()
+                if ((System.currentTimeMillis()
                         - value.getSendTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                         >= responseDelay) {
                     log.info("Request expired: {}", sentRequestMap.get(key));
@@ -217,15 +225,11 @@ public class ClientExchanger implements Exchanger {
 
             default -> log.warn("{} sent unexpected response type: {}", incomingMessage.getSenderName(), response);
         }
-        successfulRequestMap.put(sentRequestMap.get(response.getId()).
 
-                getId(), sentRequestMap.
+        internalStatistics.addSuccessfulRequestsByResponse(response);
 
-                get(response.getId()));
         sentRequestMap.remove(response.getId());
         requestDelayTimer.restartTimer();
-        //TODO Статистика подсчёта успешных ответов и времени выполнения запросов
-
     }
 
     private void setPlayerState(Response response) {
@@ -234,6 +238,30 @@ public class ClientExchanger implements Exchanger {
                 : playerState.getTokenCount());
     }
 
-    //TODO Класс для подсчёта статистики внутри Exchanger'а: Пользователь | Успешные запросы | Неуспешные запросы | Среднее время запроса
-    //Неуспешные ответы считать по expiredRequestMap
+    private class ClientStatistics {
+        private long successfulRequestCount;
+        private long totalTime;
+
+        private void addSuccessfulRequestsByResponse(Response response) {
+            this.successfulRequestCount++;
+            totalTime += System.currentTimeMillis()
+                    - response.getSendTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        }
+
+        public long getSuccessfulRequestCount() {
+            return this.successfulRequestCount;
+        }
+
+        public long getExpiredRequests() {
+            return expiredRequestMap.size();
+        }
+
+        public long getAverageRequestTime() {
+            return totalTime/successfulRequestCount;
+        }
+
+        public String getUsername() {
+            return senderName;
+        }
+    }
 }
