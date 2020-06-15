@@ -3,6 +3,7 @@ package kostyanoy.dataexchange;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import kostyanoy.game.Game;
 import kostyanoy.game.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,18 +11,18 @@ import ru.kostyanoy.connection.*;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ServerExchanger {
-    private String senderName;
-    private List<Client> unnamedClients;
-    private ConcurrentHashMap<String, Client> clientsMap;
-    private int serverPort;
+    private final String senderName;
+    private final List<Client> unnamedClients;
+    private final ConcurrentHashMap<String, Client> clientsMap;
+    private final int serverPort;
     private ServerSocket serverSocket;
     ObjectMapper mapper;
+    private final Game game;
     private static final Logger log = LoggerFactory.getLogger(ServerExchanger.class);
 
     private Thread messageListenerThread;
@@ -31,34 +32,40 @@ public class ServerExchanger {
         Connection.customizeConnectionClass("connection.properties");
     }
 
-    public ServerExchanger(String serverNickName, int serverPort) {
+    public ServerExchanger(String serverNickName, int serverPort, Game game) {
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
-        senderName = serverNickName;
         unnamedClients = new CopyOnWriteArrayList<>();
         clientsMap = new ConcurrentHashMap<>();
         this.serverPort = serverPort;
+
+        if (isNullOrEmpty(serverNickName))
+        {
+            throw new IllegalArgumentException("Server nickname is null or empty");
+        }
+        senderName = serverNickName;
+
+        if (game == null)
+        {
+            throw new IllegalArgumentException("Game is null");
+        }
+        this.game = game;
     }
 
-    public boolean sendMessage(Client client, Message message) {
+    public void sendMessage(Client client, Message message) {
         try {
             client.getConnection().getWriter().println(mapper.writeValueAsString(message));
             client.getConnection().getWriter().flush();
         } catch (JsonProcessingException e) {
             log.warn(e.getMessage(), e);
-            return false;
         }
-        return true;
     }
 
-    private boolean isNotNullAndEmpty(String string) {
-        return (string != null && !string.isEmpty());
+    private boolean isNullOrEmpty(String string) {
+        return (string == null || string.isEmpty());
     }
 
     public boolean hasCheckedNickName(String nickName) {
-        if (!isNotNullAndEmpty(nickName) || clientsMap.containsKey(nickName)) {
-            return false;
-        }
-        return true;
+        return !(isNullOrEmpty(nickName) || clientsMap.containsKey(nickName));
     }
 
     private void sleep(int timeout) {
@@ -126,9 +133,7 @@ public class ServerExchanger {
             client.getConnection().disconnect();
         }
 
-        clientsMap.forEach((key, value) -> {
-            value.getConnection().disconnect();
-        });
+        clientsMap.forEach((key, value) -> value.getConnection().disconnect());
 
         try {
             serverSocket.close();
@@ -148,17 +153,13 @@ public class ServerExchanger {
         log.info("{}: Have got {} from the client (socket: {})", senderName, incomingMessage.getClass().getSimpleName(),
                 client.hashCode());
 
-        if ((incomingMessage == null)) {
-            return;
-        }
-
         if (incomingMessage instanceof Response) {
             log.info("{} sent response. Responses from client are not supported", incomingMessage.getSenderName());
             return;
         }
 
         Request request;
-        Response response;
+        Response response = null;
         if (incomingMessage instanceof Request) {
             request = (Request) incomingMessage;
         } else {
@@ -169,7 +170,7 @@ public class ServerExchanger {
         switch (request.getType()) {
             case GREETING -> {
                 if (!hasCheckedNickName(request.getSenderName())) {
-                    response = new Response(senderName, request.getType(), Status.REJECTED, 0);
+                    response = new Response(senderName, request.getType(), Status.REJECTED, game.getInputLimit());
                     response.setMessage("Username is busy or empty");
 
                     log.info("Client (id: {}) asked for adding busy or illegal nickname '{}'",
@@ -186,65 +187,79 @@ public class ServerExchanger {
             }
 
             case STAKE -> {
-                if (!clientsMap.containsKey(request.getSenderName())) {
-                    log.info("Client named {} is not registered", client.getNickName());
-                    response = new Response(senderName, request.getType(), Status.REJECTED, 0);
-                    response.setMessage("Not registered client name '" + request.getSenderName() + "'");
-                } else {
-                    //TODO Здесь сделать игру и сохранение результатов в List
-                    log.info();
+                if (sendMessageIfNotRegisteredName(client, request)) {
+                    return;
                 }
+                if (sendMessageIfNotAllowedPlayer(client, request)) {
+                    return;
+                }
+
+                if (!game.isBetAccepted(client.getPlayer(), request.getTokens())) {
+                    response = new Response(senderName, request.getType(), Status.REJECTED, client.getPlayer().getAccount());
+                    response.setMessage("Illegal bet "
+                            + request.getTokens()
+                            + " in the game. Player account "
+                            + client.getPlayer().getAccount());
+                    log.info("Illegal bet {} in the game. Player account {}",
+                            request.getTokens(),
+                            client.getPlayer().getAccount());
+                }
+                response = new Response(senderName, request.getType(),
+                        Status.ACCEPTED,
+                        game.changePlayerStateByGame(request.getTokens(),
+                                client.getPlayer()).getAccount());
             }
             case GAMEPERMISSION -> {
-                setPlayerState(response);
-                if (!(isGameAllowed = response.getStatus() == Status.ACCEPTED)) {
-                    log.info("{} rejected {}, message: {}",
-                            response.getSenderName(),
-                            response.getType(),
-                            response.getMessage());
+                if (sendMessageIfNotRegisteredName(client, request)) {
+                    return;
+                }
+                if (game.isAllowed(client.getPlayer())) {
+                    response = new Response(senderName, request.getType(), Status.ACCEPTED, client.getPlayer().getAccount());
+                    log.info("Player {} was allowed to the game", client.getNickName());
                 }
             }
             case GOODBYE -> {
-                isRemoteAnswering.set(false);
-                requestDelayTimer.stopAndResetTimer(0);
+                if (sendMessageIfNotRegisteredName(client, request)) {
+                    return;
+                }
+                response = new Response(senderName, request.getType(), Status.ACCEPTED, client.getPlayer().getAccount());
+                clientsMap.remove(request.getSenderName());
+                log.info("Client {} left the server", client.getNickName());
             }
-            case SERVICE -> setPlayerState(response);
-
-            default -> log.warn("{} sent unexpected response type: {}", response.getSenderName(), response);
-        }
-
-
-        if (incomingMessage instanceof MessageGreeting) {
-            Message nameMessage = new MessageGreeting(senderName);
-            if (hasCheckedNickName(incomingMessage.getSenderName())) {
-                client.setNickName(incomingMessage.getSenderName());
-                nameMessage.setMessages(MessageGreeting.HELLO, client.getNickName());
-                log.info("{}: Client {} (socket: {}) added to client list", senderName, client.getNickName(), client.hashCode());
-                messages.add(String.format("%s: \n%s joined the chat", senderName, client.getNickName()));
-                log.info("{}: Added message 'Client {} (socket: {}) joined the chat'", senderName, client.getNickName(), client.hashCode());
-            } else {
-                nameMessage.setMessages(MessageGreeting.BUSY_NAME);
-                log.info("{}: Client (socket: {}) asked for adding busy nickname '{}'", senderName, client.hashCode(),
-                        incomingMessage.getSenderName());
+            case SERVICE -> {
+                long tokens = client.getPlayer() == null ? game.getInputLimit() : client.getPlayer().getAccount();
+                response = new Response(senderName, request.getType(), Status.ACCEPTED, tokens);
             }
-            sendMessageDirectly(nameMessage, client);
-            return;
-        }
-        if (incomingMessage instanceof MessageGoodbye) {
-            if (client.getNickName() != null) {
-                messages.add(String.format("%s: \n%s left the chat", senderName, client.getNickName()));
-                log.info("{}: Added message {}", senderName, messages.get(messages.size() - 1));
+
+            default -> {
+                response = new Response(senderName, MessageType.SERVICE, Status.REJECTED, game.getInputLimit());
+                response.setMessage("Illegal request type '" + request.getType() + "' (message id =" + request.getId() + ")");
+                log.warn("{} sent unexpected request type: {}", request.getSenderName(), request);
             }
-            client.getConnection().disconnect();
-            unnamedClients.remove(client);
-            log.info("{}: Closed the sockets and removed the client", senderName);
-            return;
         }
-        if (incomingMessage instanceof MessageSentByUser && client.getNickName() != null && !client.getNickName().isEmpty()) {
-            String userMessage = client.getNickName() + " (" + incomingMessage.getSendTime() + "):\n"
-                    + Arrays.toString(incomingMessage.getMessages());
-            messages.add(userMessage);
-            log.info("{}: Added massages {}", senderName, userMessage);
+
+        sendMessage(client, response);
+    }
+
+    private boolean sendMessageIfNotRegisteredName(Client client, Request request) { // returns true if message was sent
+        boolean isNotRegisteredName = !clientsMap.containsKey(request.getSenderName());
+        if (isNotRegisteredName) {
+            log.info("Client named {} is not registered", client.getNickName());
+            Response response = new Response(senderName, request.getType(), Status.REJECTED, game.getInputLimit());
+            response.setMessage("Not registered client name '" + request.getSenderName() + "'");
+            sendMessage(client, response);
         }
+        return isNotRegisteredName;
+    }
+
+    private boolean sendMessageIfNotAllowedPlayer(Client client, Request request) { // returns true if message was sent
+        boolean isNotAllowedPlayer = !game.isAllowed(client.getPlayer());
+        if (isNotAllowedPlayer) {
+            Response response = new Response(senderName, request.getType(), Status.REJECTED, client.getPlayer().getAccount());
+            response.setMessage("Client '" + client.getNickName() + "' is not allowed to the game");
+            log.info("Client {} is not allowed to the game", client.getNickName());
+            sendMessage(client, response);
+        }
+        return isNotAllowedPlayer;
     }
 }

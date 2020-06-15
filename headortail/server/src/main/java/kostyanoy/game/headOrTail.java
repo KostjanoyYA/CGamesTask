@@ -6,6 +6,7 @@ public class headOrTail implements Game {
 
     private static Random rnd = new Random();
     private static final double WINRATE = 1.9d;
+    private static final long LIMIT = 0L;
 
 
     @Override
@@ -23,17 +24,16 @@ public class headOrTail implements Game {
 
     @Override
     public boolean isAllowed(Player player) {
-        if (player == null || player.getAccount() <= 0) {
-            return false;
-        }
-        return true;
+        return player != null && player.getAccount() > LIMIT;
     }
 
     @Override
     public boolean isBetAccepted(Player player, long bet) {
-        if (bet <= 0 || bet > player.getAccount()) {
-            return false;
-        }
-        return true;
+        return bet > 0 && bet <= player.getAccount();
+    }
+
+    @Override
+    public long getInputLimit() {
+        return LIMIT;
     }
 }
