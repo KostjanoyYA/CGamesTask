@@ -1,41 +1,35 @@
 package kostyanoy.entrypoint;
 
 import kostyanoy.dataexchange.ServerExchanger;
+import kostyanoy.game.Game;
+import kostyanoy.game.HeadOrTail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.kostyanoy.connection.Connection;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
+import java.util.Scanner;
 
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(ServerExchanger.class);
 
     public static void main(String[] args) {
-        final int defaultPort = 1111;
-        final String defaultName = "Server";
-        Properties properties = new Properties();
-        try {
-            try (InputStream propertiesStream = Connection.class.getResourceAsStream("/server.properties")) {
-                if (propertiesStream != null) {
-                    properties.load(propertiesStream);
-                }
-            }
-        } catch (IOException e) {
-            log.warn("{}:\n{}", e.getClass(), e.getMessage());
-        }
 
-        int serverPort = (properties.getProperty("server.port") != null)
-                ? Integer.valueOf(properties.getProperty("server.port"))
-                : defaultPort;
-
-        String serverNickName = properties.getProperty("server.nickName", defaultName);
-
-        log.info("{}: Started", serverNickName);
-        log.info("{}: The port {} is used", serverNickName, serverPort);
-
-        Exchanger server = new ServerExchanger(serverNickName, serverPort);
+        Game game = new HeadOrTail();
+        ServerExchanger server = new ServerExchanger("server.properties", game);
         server.startExchange();
+
+        log.info("{}: Started", server.getSenderName());
+        log.info("{}: The port {} is used", server.getSenderName(), server.getServerPort());
+
+        Scanner reader = new Scanner(System.in);
+        while (!reader.nextLine().equals("stop server")) {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                log.warn(e.getMessage(), e);
+            }
+        }
+        server.stopExchange();
+        log.info("{}: Stopped", server.getSenderName());
+        System.exit(0);
     }
 }

@@ -2,7 +2,7 @@ package kostyanoy.game;
 
 import java.util.Random;
 
-public class headOrTail implements Game {
+public class HeadOrTail implements Game {
 
     private static Random rnd = new Random();
     private static final double WINRATE = 1.9d;

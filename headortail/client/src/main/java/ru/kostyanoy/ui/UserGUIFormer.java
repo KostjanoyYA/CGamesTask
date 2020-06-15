@@ -77,20 +77,6 @@ public class UserGUIFormer implements VisualPresenter {
 
         frame.setJMenuBar(jMenuBar);
 
-        //Output
-        JPanel outputPanel = new JPanel();
-        frame.add(outputPanel, BorderLayout.SOUTH);
-        outputPanel.setLayout(new BorderLayout());
-        JTextArea outputTextArea = new JTextArea(name + " started\n\nРезультат:\n");
-        outputTextArea.setEditable(false);
-        JScrollPane outputTextScrolls = new JScrollPane(outputTextArea);
-
-        outputPanel.add(outputTextScrolls);
-        outputTextScrolls.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        outputTextScrolls.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        outputTextScrolls.createHorizontalScrollBar();
-        outputTextScrolls.createVerticalScrollBar();
-
         //Right panel
         JPanel inputPanel = new JPanel();
         frame.add(inputPanel, BorderLayout.EAST);
@@ -111,13 +97,17 @@ public class UserGUIFormer implements VisualPresenter {
         JLabel accountLabel = new JLabel("Your account");
         labelPanel.add(accountLabel, BorderLayout.LINE_END);
 
-        //Start button
+        //Button panel
+        JPanel buttonPanel = new JPanel();
+        frame.add(buttonPanel, BorderLayout.SOUTH);
+        buttonPanel.setLayout(new BorderLayout());
+
         JButton makeBetButton = new JButton("Make a bet");
         makeBetButton.setMinimumSize(new Dimension(30, 60));
         makeBetButton.setFocusable(false);
         makeBetButton.addActionListener(e -> exchanger.sendStake(Math.abs(Long.parseLong(betField.getText()))));
 
-        inputPanel.add(makeBetButton, BorderLayout.NORTH);
+        buttonPanel.add(makeBetButton, BorderLayout.CENTER);
 
         //Window
         frame.setResizable(false);
@@ -170,6 +160,8 @@ public class UserGUIFormer implements VisualPresenter {
                 frame,
                 message,
                 "Exit", JOptionPane.YES_NO_OPTION);
+        log.info("userChoise = {}", userChoise);
+        System.out.println("userChoise = " + userChoise);
         if (userChoise == JOptionPane.NO_OPTION) {
             exchanger.stopExchange();
             System.exit(0);

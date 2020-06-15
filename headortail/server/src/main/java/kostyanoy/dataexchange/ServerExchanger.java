@@ -8,6 +8,7 @@ import kostyanoy.game.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.kostyanoy.connection.*;
+import ru.kostyanoy.propertyloader.PropertyLoader;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -16,10 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ServerExchanger {
-    private final String senderName;
+    private String senderName;
     private final List<Client> unnamedClients;
     private final ConcurrentHashMap<String, Client> clientsMap;
-    private final int serverPort;
+    private int serverPort;
     private ServerSocket serverSocket;
     ObjectMapper mapper;
     private final Game game;
@@ -32,23 +33,43 @@ public class ServerExchanger {
         Connection.customizeConnectionClass("connection.properties");
     }
 
+    public ServerExchanger(String propertyFileName, Game game) {
+        this("1", 0, game);
+        if (isNullOrEmpty(propertyFileName) || !PropertyLoader.load(propertyFileName, ServerExchanger.class)) {
+            log.warn("Cannot load property file '{}'", propertyFileName);
+            throw new IllegalArgumentException("Cannot load property file");
+        } else {
+            log.info("Property file '{}' has been loaded successfully", propertyFileName);
+            senderName = PropertyLoader.getPropertiesMap().get("server.nickname");
+            serverPort = Integer.parseInt(PropertyLoader.getPropertiesMap().get("server.port"));
+        }
+    }
+
     public ServerExchanger(String serverNickName, int serverPort, Game game) {
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         unnamedClients = new CopyOnWriteArrayList<>();
         clientsMap = new ConcurrentHashMap<>();
         this.serverPort = serverPort;
 
-        if (isNullOrEmpty(serverNickName))
-        {
+        if (isNullOrEmpty(serverNickName)) {
+            log.warn("Server nickname is null or empty");
             throw new IllegalArgumentException("Server nickname is null or empty");
         }
         senderName = serverNickName;
 
-        if (game == null)
-        {
+        if (game == null) {
+            log.warn("Game is null");
             throw new IllegalArgumentException("Game is null");
         }
         this.game = game;
+    }
+
+    public String getSenderName() {
+        return senderName;
+    }
+
+    public int getServerPort() {
+        return serverPort;
     }
 
     public void sendMessage(Client client, Message message) {
@@ -77,12 +98,18 @@ public class ServerExchanger {
     }
 
     public void startExchange() {
+        try {
+            serverSocket = new ServerSocket(serverPort);
+        } catch (IOException e) {
+            log.warn(e.getMessage(), e);
+        }
+
         socketListenerThread = new Thread(() -> {
             log.debug("socketListenerThread started");
             try {
                 while (!Thread.interrupted()) {
                     unnamedClients.add(new Client(new Connection().connect(serverSocket.accept())));
-                    log.info("{}: Added client socket {}", senderName, unnamedClients.get(unnamedClients.size() - 1).hashCode());
+                    log.info("Added new client (temp id {})", unnamedClients.get(unnamedClients.size() - 1).hashCode());
                     Thread.sleep(Connection.PING_TIMEOUT >> 2);
                 }
             } catch (InterruptedException | IOException e) {
@@ -116,13 +143,6 @@ public class ServerExchanger {
         messageListenerThread.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::stopExchange));
-
-        try {
-            serverSocket = new ServerSocket(serverPort);
-        } catch (IOException e) {
-            log.warn(e.getMessage(), e);
-        }
-
     }
 
     public void stopExchange() {
@@ -140,9 +160,8 @@ public class ServerExchanger {
         } catch (IOException e) {
             log.warn(e.getMessage(), e);
         } finally {
-            socketListenerThread.interrupt();
+            log.info("{}: Exchange has stopped", senderName);
         }
-        log.info("{}: Exchange has stopped", senderName);
     }
 
     private void parseMessage(Client client) throws IOException {

@@ -35,8 +35,6 @@ public class Main {
         } catch (ClassNotFoundException | UnsupportedLookAndFeelException | InstantiationException | IllegalAccessException e) {
             log.warn(e.getMessage(), e);
         }
-
-
     }
 
     private static VisualPresenter createGUI(ClientExchanger exchanger) {
