@@ -114,12 +114,13 @@ public class UserGUIFormer implements VisualPresenter {
         frame.pack();
         frame.setVisible(true);
 
-        while (exchanger.isGameAllowed()) {
+        while (!Thread.interrupted()) {
             accountLabel.setText(String.valueOf(exchanger.getPlayerState().getTokenCount()));
             try {
                 Thread.sleep(REFRESH_TIMEOUT);
             } catch (InterruptedException e) {
                 log.warn(e.getMessage(), e);
+                break;
             }
         }
     }
@@ -146,11 +147,8 @@ public class UserGUIFormer implements VisualPresenter {
         String userString = JOptionPane.showInputDialog(
                 frame,
                 "Enter your Nickname:",
-                "Chat nickname",
+                "Game nickname",
                 JOptionPane.QUESTION_MESSAGE);
-        if (userString == null) {
-            askServerIP();
-        }
         return userString;
     }
 
@@ -160,7 +158,7 @@ public class UserGUIFormer implements VisualPresenter {
                 frame,
                 message,
                 "Exit", JOptionPane.YES_NO_OPTION);
-        log.info("userChoise = {}", userChoise);
+        log.debug("userChoise = {}", userChoise);
         System.out.println("userChoise = " + userChoise);
         if (userChoise == JOptionPane.NO_OPTION) {
             exchanger.stopExchange();

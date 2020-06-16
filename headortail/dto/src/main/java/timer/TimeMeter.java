@@ -10,7 +10,7 @@ public class TimeMeter {
     }
 
     public void startTimer() {
-        this.startTime = System.nanoTime();
+        this.startTime = System.currentTimeMillis();
     }
 
     public void stopAndResetTimer(long newDuration) {
@@ -23,6 +23,7 @@ public class TimeMeter {
     }
 
     public boolean hasTimesUp() {
-        return (System.nanoTime() - startTime) >= duration;
+
+        return (System.currentTimeMillis() - startTime) >= duration;
     }
 }

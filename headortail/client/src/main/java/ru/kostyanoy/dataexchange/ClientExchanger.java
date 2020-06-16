@@ -23,7 +23,7 @@ public class ClientExchanger {
     private final long responseDelay;
     private final AtomicBoolean isRemoteAnswering;
     private final AtomicBoolean isSenderNameAccepted;
-    private boolean isGameAllowed;
+
     private final ObjectMapper mapper;
     private final ConcurrentHashMap<String, Request> sentRequestMap;
     private final ConcurrentHashMap<String, Request> expiredRequestMap;
@@ -41,9 +41,8 @@ public class ClientExchanger {
     public ClientExchanger() {
         isRemoteAnswering = new AtomicBoolean(false);
         isSenderNameAccepted = new AtomicBoolean(false);
-        isGameAllowed = false;
         this.connection = new Connection();
-        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT * 4);
+        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT * 5);
         responseDelay = Connection.PING_TIMEOUT * 2;
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         sentRequestMap = new ConcurrentHashMap<>();
@@ -53,32 +52,26 @@ public class ClientExchanger {
         internalStatistics = new ClientStatistics();
     }
 
-    public boolean isGameAllowed() {
-        return isGameAllowed;
-    }
 
 
     public void startExchange() {
         messageListenerThread = new Thread(() -> {
-            while (!Thread.interrupted() && isRemoteAnswering.get()) {
+            while (!Thread.interrupted()) {
                 try {
                     parseMessage();
                 } catch (IOException e) {
                     log.warn(e.getMessage(), e);
                 }
             }
-            connection.disconnect();
         });
+        messageListenerThread.setName("messageListenerThread");
         messageListenerThread.start();
+        log.debug("messageListenerThread started");
 
         serviceExchangeThread = new Thread(this::checkExchange);
+        serviceExchangeThread.setName("serviceExchangeThread");
         serviceExchangeThread.start();
-
-        sleep(Connection.PING_TIMEOUT * 2);
-        while (!isGameAllowed && isRemoteAnswering.get()) {
-            askGamePermission();
-            sleep(Connection.PING_TIMEOUT * 2);
-        }
+        log.debug("serviceExchangeThread started");
     }
 
     public Connection getConnection() {
@@ -98,8 +91,8 @@ public class ClientExchanger {
         try {
             connection.getWriter().println(mapper.writeValueAsString(message));
             connection.getWriter().flush();
-            sentRequestMap.put(message.getId(), (Request) message);
-            requestDelayTimer.restartTimer();
+            sentRequestMap.put(message.getMessageID(), (Request) message);
+            log.info("Sent message {}", message.toString());
         } catch (JsonProcessingException e) {
             log.warn(e.getMessage(), e);
             return false;
@@ -116,26 +109,20 @@ public class ClientExchanger {
     }
 
     public boolean hasCheckedNickName(String nickName) {
-        while (isRemoteAnswering.get()) {
-            if (!isSenderNameAccepted.get()) {
-                sendMessage(new Request(nickName, MessageType.GREETING, 0));
-            }
-            sleep(Connection.PING_TIMEOUT * 2);
+        if (isRemoteAnswering.get() && !isSenderNameAccepted.get()) {
+            sendMessage(new Request(nickName, MessageСategory.GREETING, 0));
         }
-
-
-        startExchange();
-        return true;
+        sleep(Connection.PING_TIMEOUT * 2);
+        return isSenderNameAccepted.get();
     }
 
     public void stopExchange() {
-        sendMessage(new Request(senderName, MessageType.GOODBYE, playerState.getTokenCount()));
+        sendMessage(new Request(senderName, MessageСategory.GOODBYE, playerState.getTokenCount()));
         sleep(Connection.PING_TIMEOUT * 3);
 
         serviceExchangeThread.interrupt();
         messageListenerThread.interrupt();
         isRemoteAnswering.set(false);
-        isGameAllowed = false;
         connection.disconnect();
         if (internalStatistics != null) {
             statistics = Optional.of(internalStatistics);
@@ -143,37 +130,35 @@ public class ClientExchanger {
     }
 
     public void checkExchange() {
-        if (!connection.isConnected()) {
-            isRemoteAnswering.set(false);
-            return;
-        }
-
-        sendMessage(new Request(senderName, MessageType.SERVICE, playerState.getTokenCount()));
-
+        requestDelayTimer.startTimer();
         while (!requestDelayTimer.hasTimesUp()) {
+            if (!connection.isConnected()) {
+                isRemoteAnswering.set(false);
+                log.debug("Server is disconnected");
+                break;
+            }
+
+            sendMessage(new Request(senderName, MessageСategory.SERVICE, playerState.getTokenCount()));
+
             sleep(Connection.PING_TIMEOUT >> 1);
+
             sentRequestMap.forEach((key, value) -> {
                 if ((System.currentTimeMillis()
                         - value.getSendTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                         >= responseDelay) {
-                    log.info("Request expired: {}", sentRequestMap.get(key));
+                    log.info("Request expired: {}", value);
                     expiredRequestMap.put(key, value);
                     sentRequestMap.remove(key);
                 }
             });
         }
+        log.debug("Exchange stopped from 'checkExchange'");
         stopExchange();
     }
 
-    private void askGamePermission() {
-        if (isRemoteAnswering.get() && isSenderNameAccepted.get() && !isGameAllowed) {
-            sendMessage(new Request(senderName, MessageType.GAMEPERMISSION, playerState.getTokenCount()));
-        }
-    }
-
     public void sendStake(long stake) {
-        if (isRemoteAnswering.get() && isSenderNameAccepted.get() && isGameAllowed && stake > 0) {
-            sendMessage(new Request(senderName, MessageType.GAMEPERMISSION, stake));
+        if (isRemoteAnswering.get() && isSenderNameAccepted.get() && stake > 0) {
+            sendMessage(new Request(senderName, MessageСategory.STAKE, stake));
         }
     }
 
@@ -185,7 +170,9 @@ public class ClientExchanger {
         String jsonMessage = connection.getReader().readLine();
         Message incomingMessage = mapper.readValue(jsonMessage, Message.class);
 
-        if ((incomingMessage == null)) {
+        log.debug("incomingMessage = {}", incomingMessage.toString());
+
+        if (incomingMessage == null) {
             return;
         }
 
@@ -200,24 +187,24 @@ public class ClientExchanger {
         if (incomingMessage instanceof Response) {
             response = (Response) incomingMessage;
         } else {
-            log.warn("{} sent unsupported type of message", incomingMessage.getSenderName());
+            log.warn("{} sent unsupported category of message", incomingMessage.getSenderName());
             return;
         }
 
-        if (!sentRequestMap.containsKey(response.getId())) {
+        if (!sentRequestMap.containsKey(response.getMessageID())) {
             log.warn("{} sent unrequested response: {}", incomingMessage.getSenderName(), response);
             return;
         }
 
-        if (expiredRequestMap.containsKey(response.getId())) {
+        if (expiredRequestMap.containsKey(response.getMessageID())) {
             log.warn("{} sent expired response: {}", incomingMessage.getSenderName(), response);
             return;
         }
 
-        switch (response.getType()) {
+        switch (response.getCategory()) {
             case GREETING -> {
                 senderName = (response.getStatus() == Status.ACCEPTED)
-                        ? sentRequestMap.get(response.getId()).getSenderName()
+                        ? sentRequestMap.get(response.getMessageID()).getSenderName()
                         : null;
                 isSenderNameAccepted.set(true);
                 setPlayerState(response);
@@ -229,17 +216,8 @@ public class ClientExchanger {
                 } else {
                     log.info("{} rejected {}, message: {}",
                             response.getSenderName(),
-                            response.getType(),
-                            response.getMessage());
-                }
-            }
-            case GAMEPERMISSION -> {
-                setPlayerState(response);
-                if (!(isGameAllowed = response.getStatus() == Status.ACCEPTED)) {
-                    log.info("{} rejected {}, message: {}",
-                            response.getSenderName(),
-                            response.getType(),
-                            response.getMessage());
+                            response.getCategory(),
+                            response.getMessageText());
                 }
             }
             case GOODBYE -> {
@@ -248,12 +226,12 @@ public class ClientExchanger {
             }
             case SERVICE -> setPlayerState(response);
 
-            default -> log.warn("{} sent unexpected response type: {}", response.getSenderName(), response);
+            default -> log.warn("{} sent unexpected response category: {}", response.getSenderName(), response);
         }
 
         internalStatistics.addSuccessfulRequestsByResponse(response);
 
-        sentRequestMap.remove(response.getId());
+        sentRequestMap.remove(response.getMessageID());
         requestDelayTimer.restartTimer();
     }
 

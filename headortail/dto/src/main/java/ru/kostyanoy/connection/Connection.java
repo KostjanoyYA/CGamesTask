@@ -79,16 +79,22 @@ public class Connection {
                 while (!Thread.interrupted() && attempts <= PING_ATTEMPTS_LIMIT) {
                     isConnected.set(socket.getInetAddress().isReachable(PING_TIMEOUT));
                     attempts = isConnected.get() ? 0 : attempts++;
+
+                    log.debug("Ping attempt № {}", attempts);
+
                     Thread.sleep(PING_TIMEOUT);
                 }
             } catch (IOException | InterruptedException e) {
                 log.warn(e.getMessage(), e);
+                isConnected.set(false);
+                pinger.interrupt();
             } finally {
                 isConnected.set(false);
             }
         });
-        log.info("Ping started");
+        pinger.setName("Pinger (" + pinger.getId() + ")");
         pinger.start();
+        log.info("Ping started");
     }
 
     public boolean isConnected() {

@@ -3,26 +3,39 @@ package ru.kostyanoy.connection;
 public class Response extends Message {
 
     private Status status;
-    private String message;
+    private String messageText;
 
-    public Response(String senderName, MessageType type, Status status, long tokens) {
-        super(senderName, type, tokens);
+    public Response() {}
+
+    public Response(String senderName, MessageСategory сategory, Status status, long tokens) {
+        super(senderName, сategory, tokens);
         this.status = status;
     }
 
-    public void setId(Request request) {
-        super.setId(request.getId());
+    public void setMessageID(Request request) { super.setMessageID(request.getMessageID());}
+
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public Status getStatus() {
         return status;
     }
 
-    public String getMessage() {
-        return message;
+    public String getMessageText() {
+        return messageText;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setMessageText(String messageText) {
+        this.messageText = messageText;
+    }
+
+    @Override
+    public String toString() {
+        return "Response{" +
+                super.toString() +
+                "status=" + status +
+                ", messageText='" + messageText + '\'' +
+                '}';
     }
 }

@@ -1,9 +1,8 @@
 package ru.kostyanoy.connection;
 
-public enum MessageType {
+public enum MessageСategory {
     GREETING,
     GOODBYE,
     STAKE,
-    GAMEPERMISSION,
     SERVICE
 }

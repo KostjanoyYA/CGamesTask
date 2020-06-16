@@ -14,25 +14,24 @@ import java.time.LocalDateTime;
 })
 public class Message implements Serializable {
 
-    private String id;
+    private String messageID;
 
     private String senderName;
 
-    private MessageType type;
+    private MessageСategory category;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime sendTime;
 
     private long tokens;
 
-    //Message() {    }
-    //TODO Возможно, конструктор нужен для сериализации. Удали, если не нужен
+    public Message() {    }
 
-    Message(String senderName, MessageType type, long tokens) {
-        this.id = UUIDGenerator.INSTANCE.nextID();
+    public Message(String senderName, MessageСategory category, long tokens) {
+        this.messageID = UUIDGenerator.INSTANCE.nextID();
         this.senderName = senderName;
         this.sendTime = LocalDateTime.now();
-        this.type = type;
+        this.category = category;
         this.tokens = tokens;
     }
 
@@ -44,11 +43,34 @@ public class Message implements Serializable {
         return sendTime;
     }
 
-    public String getId() { return id; }
+    public String getMessageID() { return messageID; }
 
-    protected void setId(String id) { this.id = id; }
+    protected void setMessageID(String messageID) { this.messageID = messageID; }
 
-    public MessageType getType() { return type; }
+    public MessageСategory getCategory() { return category; }
+
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
+    }
+
+    public void setCategory(MessageСategory category) {
+        this.category = category;
+    }
+
+    public void setTokens(long tokens) {
+        this.tokens = tokens;
+    }
 
     public long getTokens() { return tokens; }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "id='" + messageID + '\'' + //TODO Missing type ID
+                ", senderName='" + senderName + '\'' +
+                ", category=" + category +
+                ", sendTime=" + sendTime +
+                ", tokens=" + tokens +
+                '}';
+    }
 }

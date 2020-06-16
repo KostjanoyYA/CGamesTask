@@ -76,6 +76,7 @@ public class ServerExchanger {
         try {
             client.getConnection().getWriter().println(mapper.writeValueAsString(message));
             client.getConnection().getWriter().flush();
+            log.info("Sent message {}", message.toString());
         } catch (JsonProcessingException e) {
             log.warn(e.getMessage(), e);
         }
@@ -86,7 +87,7 @@ public class ServerExchanger {
     }
 
     public boolean hasCheckedNickName(String nickName) {
-        return !(isNullOrEmpty(nickName) || clientsMap.containsKey(nickName));
+        return !isNullOrEmpty(nickName) || !clientsMap.containsKey(nickName);
     }
 
     private void sleep(int timeout) {
@@ -110,6 +111,9 @@ public class ServerExchanger {
                 while (!Thread.interrupted()) {
                     unnamedClients.add(new Client(new Connection().connect(serverSocket.accept())));
                     log.info("Added new client (temp id {})", unnamedClients.get(unnamedClients.size() - 1).hashCode());
+
+                    log.debug("unnamedClients: {})", unnamedClients);
+
                     Thread.sleep(Connection.PING_TIMEOUT >> 2);
                 }
             } catch (InterruptedException | IOException e) {
@@ -128,7 +132,7 @@ public class ServerExchanger {
                         }
 
                         if (unnamedClients.get(i).getConnection().getReader().ready()) {
-                            log.debug("{}: recieved message from the client {} (socket: {})", senderName,
+                            log.debug("recieved message from the client '{}' (socket: {})",
                                     unnamedClients.get(i).getNickName(), unnamedClients.get(i).hashCode());
                             parseMessage(unnamedClients.get(i));
                             break;
@@ -169,7 +173,7 @@ public class ServerExchanger {
         jsonMessage = client.getConnection().getReader().readLine();
         Message incomingMessage = mapper.readValue(jsonMessage, Message.class);
 
-        log.info("{}: Have got {} from the client (socket: {})", senderName, incomingMessage.getClass().getSimpleName(),
+        log.debug("Have got {} from the client (id {})", incomingMessage.getClass().getSimpleName(),
                 client.hashCode());
 
         if (incomingMessage instanceof Response) {
@@ -178,44 +182,48 @@ public class ServerExchanger {
         }
 
         Request request;
-        Response response = null;
+        Response response = new Response();
         if (incomingMessage instanceof Request) {
             request = (Request) incomingMessage;
+            log.info("{} sent request: {}", incomingMessage.getSenderName(), request);
+            response.setMessageID(request);
+            response.setSenderName(senderName);
+            response.setCategory(request.getCategory());
+
         } else {
-            log.warn("{} sent unsupported type of message", incomingMessage.getSenderName());
+            log.warn("{} sent unsupported category of message", incomingMessage.getSenderName());
             return;
         }
 
-        switch (request.getType()) {
+        switch (request.getCategory()) {
             case GREETING -> {
                 if (!hasCheckedNickName(request.getSenderName())) {
-                    response = new Response(senderName, request.getType(), Status.REJECTED, game.getInputLimit());
-                    response.setMessage("Username is busy or empty");
-
+                    response.setStatus(Status.REJECTED);
+                    response.setTokens(game.getInputLimit());
+                    response.setMessageText("Username is busy, null or empty");
                     log.info("Client (id: {}) asked for adding busy or illegal nickname '{}'",
                             client.hashCode(), request.getSenderName());
                 } else {
                     client.setNickName(request.getSenderName());
                     client.setPlayer(Player.createDefaultPlayer());
-                    response = new Response(senderName, request.getType(), Status.ACCEPTED, client.getPlayer().getAccount());
+
+                    response.setStatus(Status.ACCEPTED);
+                    response.setTokens(client.getPlayer().getAccount());
+
                     clientsMap.put(client.getNickName(), client);
                     unnamedClients.remove(client);
                     log.info("Client added '{}'", client);
                 }
-                sendMessage(client, response);
             }
 
             case STAKE -> {
-                if (sendMessageIfNotRegisteredName(client, request)) {
-                    return;
-                }
-                if (sendMessageIfNotAllowedPlayer(client, request)) {
-                    return;
-                }
+                if (sendMessageIfNotRegisteredName(client, request)) break;
+                if (sendMessageIfNotAllowedPlayer(client, request)) break;
 
                 if (!game.isBetAccepted(client.getPlayer(), request.getTokens())) {
-                    response = new Response(senderName, request.getType(), Status.REJECTED, client.getPlayer().getAccount());
-                    response.setMessage("Illegal bet "
+                    response.setStatus(Status.REJECTED);
+                    response.setTokens(client.getPlayer().getAccount());
+                    response.setMessageText("Illegal bet "
                             + request.getTokens()
                             + " in the game. Player account "
                             + client.getPlayer().getAccount());
@@ -223,49 +231,40 @@ public class ServerExchanger {
                             request.getTokens(),
                             client.getPlayer().getAccount());
                 }
-                response = new Response(senderName, request.getType(),
-                        Status.ACCEPTED,
-                        game.changePlayerStateByGame(request.getTokens(),
-                                client.getPlayer()).getAccount());
-            }
-            case GAMEPERMISSION -> {
-                if (sendMessageIfNotRegisteredName(client, request)) {
-                    return;
-                }
-                if (game.isAllowed(client.getPlayer())) {
-                    response = new Response(senderName, request.getType(), Status.ACCEPTED, client.getPlayer().getAccount());
-                    log.info("Player {} was allowed to the game", client.getNickName());
-                }
+                response.setStatus(Status.ACCEPTED);
+                response.setTokens(game
+                        .changePlayerStateByGame(request.getTokens(), client.getPlayer())
+                        .getAccount());
             }
             case GOODBYE -> {
-                if (sendMessageIfNotRegisteredName(client, request)) {
-                    return;
-                }
-                response = new Response(senderName, request.getType(), Status.ACCEPTED, client.getPlayer().getAccount());
-                clientsMap.remove(request.getSenderName());
+                response.setStatus(Status.ACCEPTED);
+                response.setTokens(game.getInputLimit());
+
                 log.info("Client {} left the server", client.getNickName());
+                if (sendMessageIfNotRegisteredName(client, request)) break;
+                clientsMap.remove(request.getSenderName());
+                client.getConnection().disconnect();
             }
             case SERVICE -> {
                 long tokens = client.getPlayer() == null ? game.getInputLimit() : client.getPlayer().getAccount();
-                response = new Response(senderName, request.getType(), Status.ACCEPTED, tokens);
+                response.setStatus(Status.ACCEPTED);
+                response.setTokens(tokens);
             }
-
             default -> {
-                response = new Response(senderName, MessageType.SERVICE, Status.REJECTED, game.getInputLimit());
-                response.setMessage("Illegal request type '" + request.getType() + "' (message id =" + request.getId() + ")");
-                log.warn("{} sent unexpected request type: {}", request.getSenderName(), request);
+                response.setCategory(MessageСategory.SERVICE);
+                response.setMessageText("Illegal request category '" + request.getCategory() + "' (message id =" + request.getMessageID() + ")");
+                log.warn("{} sent unexpected request category: {}", request.getSenderName(), request);
             }
         }
-
         sendMessage(client, response);
     }
 
     private boolean sendMessageIfNotRegisteredName(Client client, Request request) { // returns true if message was sent
-        boolean isNotRegisteredName = !clientsMap.containsKey(request.getSenderName());
+        boolean isNotRegisteredName = isNullOrEmpty(client.getNickName()) || !clientsMap.containsKey(request.getSenderName());
         if (isNotRegisteredName) {
             log.info("Client named {} is not registered", client.getNickName());
-            Response response = new Response(senderName, request.getType(), Status.REJECTED, game.getInputLimit());
-            response.setMessage("Not registered client name '" + request.getSenderName() + "'");
+            Response response = new Response(senderName, request.getCategory(), Status.REJECTED, game.getInputLimit());
+            response.setMessageText("Not registered client name '" + request.getSenderName() + "'");
             sendMessage(client, response);
         }
         return isNotRegisteredName;
@@ -274,8 +273,8 @@ public class ServerExchanger {
     private boolean sendMessageIfNotAllowedPlayer(Client client, Request request) { // returns true if message was sent
         boolean isNotAllowedPlayer = !game.isAllowed(client.getPlayer());
         if (isNotAllowedPlayer) {
-            Response response = new Response(senderName, request.getType(), Status.REJECTED, client.getPlayer().getAccount());
-            response.setMessage("Client '" + client.getNickName() + "' is not allowed to the game");
+            Response response = new Response(senderName, request.getCategory(), Status.REJECTED, client.getPlayer().getAccount());
+            response.setMessageText("Client '" + client.getNickName() + "' is not allowed to the game");
             log.info("Client {} is not allowed to the game", client.getNickName());
             sendMessage(client, response);
         }

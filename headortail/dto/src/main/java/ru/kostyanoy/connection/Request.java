@@ -2,9 +2,9 @@ package ru.kostyanoy.connection;
 
 public class Request extends Message {
 
-    private long tokens;
+    public Request() {};
 
-    public Request(String senderName, MessageType type, long tokens) {
-        super(senderName, type, tokens);
+    public Request(String senderName, MessageСategory сategory, long tokens) {
+        super(senderName, сategory, tokens);
     }
 }
