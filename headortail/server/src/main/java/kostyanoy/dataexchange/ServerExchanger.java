@@ -132,7 +132,7 @@ public class ServerExchanger {
                         }
 
                         if (unnamedClients.get(i).getConnection().getReader().ready()) {
-                            log.debug("recieved message from the client '{}' (socket: {})",
+                            log.debug("recieved message from the client '{}' ({})",
                                     unnamedClients.get(i).getNickName(), unnamedClients.get(i).hashCode());
                             parseMessage(unnamedClients.get(i));
                             break;
