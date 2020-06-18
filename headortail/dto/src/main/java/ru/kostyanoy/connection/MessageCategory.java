@@ -1,6 +1,6 @@
 package ru.kostyanoy.connection;
 
-public enum MessageСategory {
+public enum MessageCategory {
     GREETING,
     GOODBYE,
     STAKE,

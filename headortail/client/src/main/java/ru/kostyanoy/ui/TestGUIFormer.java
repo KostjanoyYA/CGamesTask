@@ -134,8 +134,8 @@
 //        startButton.addActionListener(e -> {
 //            statusLabel.setText("Process is running");
 //            while (exchanger.isGameAllowed()) {
-//                //TODO игру здесь помести. Сервер отвечает за правила (начало и конец игры)
-//                client.getPlayerState(); //TODO Перенести в класс игры или view
+//
+//                client.getPlayerState();
 //            }
 //
 //            while (exchanger.getStatistics().isEmpty()) {

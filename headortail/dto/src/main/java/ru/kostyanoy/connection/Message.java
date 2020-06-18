@@ -18,16 +18,19 @@ public class Message implements Serializable {
 
     private String senderName;
 
-    private MessageСategory category;
+    private MessageCategory category;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime sendTime;
 
     private long tokens;
 
-    public Message() {    }
+    public Message() {
+        this.messageID = UUIDGenerator.INSTANCE.nextID();
+        this.sendTime = LocalDateTime.now();
+    }
 
-    public Message(String senderName, MessageСategory category, long tokens) {
+    public Message(String senderName, MessageCategory category, long tokens) {
         this.messageID = UUIDGenerator.INSTANCE.nextID();
         this.senderName = senderName;
         this.sendTime = LocalDateTime.now();
@@ -39,21 +42,25 @@ public class Message implements Serializable {
         return senderName;
     }
 
-    public LocalDateTime getSendTime() {
-        return sendTime;
-    }
-
-    public String getMessageID() { return messageID; }
-
-    protected void setMessageID(String messageID) { this.messageID = messageID; }
-
-    public MessageСategory getCategory() { return category; }
-
     public void setSenderName(String senderName) {
         this.senderName = senderName;
     }
 
-    public void setCategory(MessageСategory category) {
+    public LocalDateTime getSendTime() {
+        return sendTime;
+    }
+
+    public void setSendTime(LocalDateTime sendTime) {
+        this.sendTime = sendTime;
+    }
+
+    public String getMessageID() { return messageID; }
+
+    public void setMessageID(String messageID) { this.messageID = messageID; }
+
+    public MessageCategory getCategory() { return category; }
+
+    public void setCategory(MessageCategory category) {
         this.category = category;
     }
 
@@ -66,7 +73,7 @@ public class Message implements Serializable {
     @Override
     public String toString() {
         return "Message{" +
-                "id='" + messageID + '\'' + //TODO Missing type ID
+                "messageID='" + messageID + '\'' +
                 ", senderName='" + senderName + '\'' +
                 ", category=" + category +
                 ", sendTime=" + sendTime +

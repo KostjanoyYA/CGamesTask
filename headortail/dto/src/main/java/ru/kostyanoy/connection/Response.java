@@ -7,16 +7,12 @@ public class Response extends Message {
 
     public Response() {}
 
-    public Response(String senderName, MessageСategory сategory, Status status, long tokens) {
-        super(senderName, сategory, tokens);
+    public Response(String senderName, MessageCategory category, Status status, long tokens) {
+        super(senderName, category, tokens);
         this.status = status;
     }
 
-    public void setMessageID(Request request) { super.setMessageID(request.getMessageID());}
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
+    public void setStatus(Status status) { this.status = status;}
 
     public Status getStatus() {
         return status;
@@ -30,11 +26,15 @@ public class Response extends Message {
         this.messageText = messageText;
     }
 
+    public void setMessageID(Request request){
+        super.setMessageID(request.getMessageID());
+    }
+
     @Override
     public String toString() {
         return "Response{" +
                 super.toString() +
-                "status=" + status +
+                "status=" + status + '\'' +
                 ", messageText='" + messageText + '\'' +
                 '}';
     }

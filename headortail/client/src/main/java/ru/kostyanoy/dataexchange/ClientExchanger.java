@@ -110,14 +110,14 @@ public class ClientExchanger {
 
     public boolean hasCheckedNickName(String nickName) {
         if (isRemoteAnswering.get() && !isSenderNameAccepted.get()) {
-            sendMessage(new Request(nickName, MessageСategory.GREETING, 0));
+            sendMessage(new Request(nickName, MessageCategory.GREETING, 0));
         }
         sleep(Connection.PING_TIMEOUT * 2);
         return isSenderNameAccepted.get();
     }
 
     public void stopExchange() {
-        sendMessage(new Request(senderName, MessageСategory.GOODBYE, playerState.getTokenCount()));
+        sendMessage(new Request(senderName, MessageCategory.GOODBYE, playerState.getTokenCount()));
         sleep(Connection.PING_TIMEOUT * 3);
 
         serviceExchangeThread.interrupt();
@@ -138,7 +138,7 @@ public class ClientExchanger {
                 break;
             }
 
-            sendMessage(new Request(senderName, MessageСategory.SERVICE, playerState.getTokenCount()));
+            sendMessage(new Request(senderName, MessageCategory.SERVICE, playerState.getTokenCount()));
 
             sleep(Connection.PING_TIMEOUT >> 1);
 
@@ -158,7 +158,7 @@ public class ClientExchanger {
 
     public void sendStake(long stake) {
         if (isRemoteAnswering.get() && isSenderNameAccepted.get() && stake > 0) {
-            sendMessage(new Request(senderName, MessageСategory.STAKE, stake));
+            sendMessage(new Request(senderName, MessageCategory.STAKE, stake));
         }
     }
 
@@ -192,12 +192,12 @@ public class ClientExchanger {
         }
 
         if (!sentRequestMap.containsKey(response.getMessageID())) {
-            log.warn("{} sent unrequested response: {}", incomingMessage.getSenderName(), response);
+            log.warn("{} sent unrequested response: {}", response.getSenderName(), response);
             return;
         }
 
         if (expiredRequestMap.containsKey(response.getMessageID())) {
-            log.warn("{} sent expired response: {}", incomingMessage.getSenderName(), response);
+            log.warn("{} sent expired response: {}", response.getSenderName(), response);
             return;
         }
 

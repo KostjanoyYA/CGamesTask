@@ -251,7 +251,7 @@ public class ServerExchanger {
                 response.setTokens(tokens);
             }
             default -> {
-                response.setCategory(MessageСategory.SERVICE);
+                response.setCategory(MessageCategory.SERVICE);
                 response.setMessageText("Illegal request category '" + request.getCategory() + "' (message id =" + request.getMessageID() + ")");
                 log.warn("{} sent unexpected request category: {}", request.getSenderName(), request);
             }
