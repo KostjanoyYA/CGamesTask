@@ -5,7 +5,7 @@ public class Response extends Message {
     private Status status;
     private String messageText;
 
-    public Response() {}
+    public Response() {    }
 
     public Response(String senderName, MessageCategory category, Status status, long tokens) {
         super(senderName, category, tokens);
@@ -24,10 +24,6 @@ public class Response extends Message {
 
     public void setMessageText(String messageText) {
         this.messageText = messageText;
-    }
-
-    public void setMessageID(Request request){
-        super.setMessageID(request.getMessageID());
     }
 
     @Override

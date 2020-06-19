@@ -20,12 +20,13 @@ public class Main {
         log.info("{}: Started", server.getSenderName());
         log.info("{}: The port {} is used", server.getSenderName(), server.getServerPort());
 
-        Scanner reader = new Scanner(System.in);
-        while (!reader.nextLine().equals("stop server")) {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                log.warn(e.getMessage(), e);
+        try (Scanner reader = new Scanner(System.in)) {
+            while (!reader.nextLine().equals("stop server")) {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    log.warn(e.getMessage(), e);
+                }
             }
         }
         server.stopExchange();

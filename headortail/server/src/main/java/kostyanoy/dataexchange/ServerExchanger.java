@@ -186,7 +186,7 @@ public class ServerExchanger {
         if (incomingMessage instanceof Request) {
             request = (Request) incomingMessage;
             log.info("{} sent request: {}", incomingMessage.getSenderName(), request);
-            response.setMessageID(request);
+            response.setMessageID(request.getMessageID());
             response.setSenderName(senderName);
             response.setCategory(request.getCategory());
 
