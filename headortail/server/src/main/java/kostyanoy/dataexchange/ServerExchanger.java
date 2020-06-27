@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import kostyanoy.game.Game;
-import kostyanoy.game.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.kostyanoy.connection.*;
@@ -132,15 +131,28 @@ public class ServerExchanger {
                         }
 
                         if (unnamedClients.get(i).getConnection().getReader().ready()) {
-                            log.debug("recieved message from the client '{}' ({})",
+                            log.debug("received message from the client '{}' ({})",
                                     unnamedClients.get(i).getNickName(), unnamedClients.get(i).hashCode());
                             parseMessage(unnamedClients.get(i));
-                            break;
                         }
+
                     } catch (IOException e) {
                         log.warn(e.getMessage(), e);
+                        continue;
                     }
                 }
+
+                clientsMap.forEach((key, value) -> {
+                    try {
+                        if (value.getConnection().getReader().ready()) {
+                            log.debug("received message from the client '{}'", value.getNickName());
+                            parseMessage(value);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+
                 sleep(Connection.PING_TIMEOUT >> 1);
             }
         });
@@ -205,7 +217,7 @@ public class ServerExchanger {
                             client.hashCode(), request.getSenderName());
                 } else {
                     client.setNickName(request.getSenderName());
-                    client.setPlayer(Player.createDefaultPlayer());
+                    client.setPlayer(game.createNewPlayer());
 
                     response.setStatus(Status.ACCEPTED);
                     response.setTokens(client.getPlayer().getAccount());
@@ -217,12 +229,22 @@ public class ServerExchanger {
             }
 
             case STAKE -> {
-                if (sendMessageIfNotRegisteredName(client, request)) break;
-                if (sendMessageIfNotAllowedPlayer(client, request)) break;
+                response.setStatus(Status.REJECTED);
+                response.setTokens(client.getPlayer().getAccount());
+
+                if (isNullOrEmpty(client.getNickName()) || !clientsMap.containsKey(request.getSenderName())) {
+                    log.info("Client named {} is not registered", client.getNickName());
+                    response.setMessageText("Not registered client name '" + request.getSenderName() + "'");
+                    break;
+                }
+
+                if (!game.isAllowed(client.getPlayer())) {
+                    response.setMessageText("Client '" + client.getNickName() + "' is not allowed to the game");
+                    log.info("Client {} is not allowed to the game", client.getNickName());
+                    break;
+                }
 
                 if (!game.isBetAccepted(client.getPlayer(), request.getTokens())) {
-                    response.setStatus(Status.REJECTED);
-                    response.setTokens(client.getPlayer().getAccount());
                     response.setMessageText("Illegal bet "
                             + request.getTokens()
                             + " in the game. Player account "
@@ -230,6 +252,7 @@ public class ServerExchanger {
                     log.info("Illegal bet {} in the game. Player account {}",
                             request.getTokens(),
                             client.getPlayer().getAccount());
+                    break;
                 }
                 response.setStatus(Status.ACCEPTED);
                 response.setTokens(game
@@ -241,8 +264,10 @@ public class ServerExchanger {
                 response.setTokens(game.getInputLimit());
 
                 log.info("Client {} left the server", client.getNickName());
-                if (sendMessageIfNotRegisteredName(client, request)) break;
-                clientsMap.remove(request.getSenderName());
+                if (clientsMap.contains(client)) {
+                    clientsMap.remove(request.getSenderName());
+                }
+                sendMessage(client, response);
                 client.getConnection().disconnect();
             }
             case SERVICE -> {
@@ -268,16 +293,5 @@ public class ServerExchanger {
             sendMessage(client, response);
         }
         return isNotRegisteredName;
-    }
-
-    private boolean sendMessageIfNotAllowedPlayer(Client client, Request request) { // returns true if message was sent
-        boolean isNotAllowedPlayer = !game.isAllowed(client.getPlayer());
-        if (isNotAllowedPlayer) {
-            Response response = new Response(senderName, request.getCategory(), Status.REJECTED, client.getPlayer().getAccount());
-            response.setMessageText("Client '" + client.getNickName() + "' is not allowed to the game");
-            log.info("Client {} is not allowed to the game", client.getNickName());
-            sendMessage(client, response);
-        }
-        return isNotAllowedPlayer;
     }
 }

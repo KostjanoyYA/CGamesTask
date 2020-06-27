@@ -8,6 +8,9 @@ public class HeadOrTail implements Game {
     private static final double WINRATE = 1.9d;
     private static final long LIMIT = 0L;
 
+    static  {
+        Player.customizePlayer("defaultplayer.properties");
+    }
 
     @Override
     public Player changePlayerStateByGame(long bet, Player player) {
@@ -35,5 +38,10 @@ public class HeadOrTail implements Game {
     @Override
     public long getInputLimit() {
         return LIMIT;
+    }
+
+    @Override
+    public Player createNewPlayer() {
+        return Player.createDefaultPlayer();
     }
 }

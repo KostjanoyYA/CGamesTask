@@ -25,17 +25,23 @@ public class Main {
 
         client.startExchange();
 
-        String userStringNickName = null;
-        while (!client.hasCheckedNickName(userStringNickName)) {
+        String userStringNickName;
+        boolean isCheckedNickName = false;
+        while (true) {
             userStringNickName = gui.askNickName();
             log.debug("userStringNickName = {}", userStringNickName);
-            if (userStringNickName == null) {
+            isCheckedNickName = client.hasCheckedNickName(userStringNickName);
+            if (isCheckedNickName) {
+                break;
+            }
+            if (gui.askExit("Nickname '" + userStringNickName + "' is busy. Try again?") == 1) {
                 client.stopExchange();
                 log.debug("client.stopExchange() from Main");
                 System.exit(0);
             }
-            gui.askExit("Nickname '" + userStringNickName + "' is busy. Try again?");
         }
+
+
         gui.showMessage("Successful user name checking");
 
         try {

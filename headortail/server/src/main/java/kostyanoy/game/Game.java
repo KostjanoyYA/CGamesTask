@@ -5,4 +5,5 @@ public interface Game {
     boolean isAllowed(Player player);
     boolean isBetAccepted(Player player, long bet);
     long getInputLimit();
+    Player createNewPlayer();
 }

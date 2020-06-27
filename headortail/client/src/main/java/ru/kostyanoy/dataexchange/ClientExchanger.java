@@ -42,8 +42,8 @@ public class ClientExchanger {
         isRemoteAnswering = new AtomicBoolean(false);
         isSenderNameAccepted = new AtomicBoolean(false);
         this.connection = new Connection();
-        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT * 5);
-        responseDelay = Connection.PING_TIMEOUT * 2;
+        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT * 10);
+        responseDelay = Connection.PING_TIMEOUT * 10;
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         sentRequestMap = new ConcurrentHashMap<>();
         expiredRequestMap = new ConcurrentHashMap<>();
@@ -109,9 +109,13 @@ public class ClientExchanger {
     }
 
     public boolean hasCheckedNickName(String nickName) {
+        log.debug("!!!!!!!!!!!!Before if");
+        log.debug("isRemoteAnswering.get() = {}, !isSenderNameAccepted.get() = {}", isRemoteAnswering.get(), !isSenderNameAccepted.get());
         if (isRemoteAnswering.get() && !isSenderNameAccepted.get()) {
+            log.debug("!!!!!!!!!!!!In the if");
             sendMessage(new Request(nickName, MessageCategory.GREETING, 0));
         }
+        log.debug("!!!!!!!!!!!!After if");
         sleep(Connection.PING_TIMEOUT * 2);
         return isSenderNameAccepted.get();
     }
@@ -156,7 +160,7 @@ public class ClientExchanger {
         stopExchange();
     }
 
-    public void sendStake(long stake) {
+    public void sendStake(long stake) { //TODO , Choice choice в параметры конструктора
         if (isRemoteAnswering.get() && isSenderNameAccepted.get() && stake > 0) {
             sendMessage(new Request(senderName, MessageCategory.STAKE, stake));
         }
@@ -187,9 +191,11 @@ public class ClientExchanger {
         if (incomingMessage instanceof Response) {
             response = (Response) incomingMessage;
         } else {
-            log.warn("{} sent unsupported category of message", incomingMessage.getSenderName());
+            log.warn("{} sent unsupported type of message", incomingMessage.getSenderName());
             return;
         }
+
+        isRemoteAnswering.set(true);
 
         if (!sentRequestMap.containsKey(response.getMessageID())) {
             log.warn("{} sent unrequested response: {}", response.getSenderName(), response);
@@ -206,7 +212,7 @@ public class ClientExchanger {
                 senderName = (response.getStatus() == Status.ACCEPTED)
                         ? sentRequestMap.get(response.getMessageID()).getSenderName()
                         : null;
-                isSenderNameAccepted.set(true);
+                isSenderNameAccepted.set(senderName != null);
                 setPlayerState(response);
             }
 
@@ -224,7 +230,7 @@ public class ClientExchanger {
                 isRemoteAnswering.set(false);
                 requestDelayTimer.stopAndResetTimer(0);
             }
-            case SERVICE -> setPlayerState(response);
+            case SERVICE -> {setPlayerState(response);}
 
             default -> log.warn("{} sent unexpected response category: {}", response.getSenderName(), response);
         }

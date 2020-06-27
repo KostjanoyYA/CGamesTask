@@ -16,7 +16,8 @@ public class UserGUIFormer implements VisualPresenter {
     private JFrame frame;
     private final String name = "Heads and tails client";
     private final ClientExchanger exchanger;
-    private static final int REFRESH_TIMEOUT = 2000;
+    private static final int REFRESH_TIMEOUT = 1000;
+    private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
     private static final Logger log = LoggerFactory.getLogger(UserGUIFormer.class);
 
     public UserGUIFormer(ClientExchanger exchanger) {
@@ -29,7 +30,7 @@ public class UserGUIFormer implements VisualPresenter {
 
         frame = new JFrame(name);
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-        frame.setMinimumSize(new Dimension(640, 480));
+        frame.setMinimumSize(new Dimension(320, 240));
         frame.setLocationByPlatform(true);
         frame.addWindowListener(new WindowListener() {
             public void windowActivated(WindowEvent event) {
@@ -84,7 +85,29 @@ public class UserGUIFormer implements VisualPresenter {
 
         JTextField betField = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
         betField.setText("1");
+        betField.setFont(FONT);
         inputPanel.add(betField, BorderLayout.PAGE_START);
+
+        JRadioButton headRadioButton = new JRadioButton("Head");
+        headRadioButton.setActionCommand("Head");
+        headRadioButton.setFont(FONT);
+        headRadioButton.setSelected(true);
+
+        JRadioButton tailRadioButton = new JRadioButton("Tail");
+        tailRadioButton.setActionCommand("Tail");
+        tailRadioButton.setFont(FONT);
+
+        ButtonGroup group = new ButtonGroup();
+        group.add(headRadioButton);
+        group.add(tailRadioButton);
+        inputPanel.add(headRadioButton, BorderLayout.WEST);
+        inputPanel.add(tailRadioButton, BorderLayout.EAST);
+
+
+
+        JLabel accountLabel = new JLabel("0");
+        accountLabel.setFont(FONT);
+        inputPanel.add(accountLabel, BorderLayout.PAGE_END);
 
         //Left panel
         JPanel labelPanel = new JPanel();
@@ -92,10 +115,16 @@ public class UserGUIFormer implements VisualPresenter {
         labelPanel.setLayout(new BorderLayout());
 
         JLabel betLabel = new JLabel("Enter your bet here:");
+        betLabel.setFont(FONT);
         labelPanel.add(betLabel, BorderLayout.PAGE_START);
 
-        JLabel accountLabel = new JLabel("Your account");
-        labelPanel.add(accountLabel, BorderLayout.LINE_END);
+        JLabel yourChoice = new JLabel("Your choice");
+        yourChoice.setFont(FONT);
+        labelPanel.add(yourChoice, BorderLayout.WEST);
+
+        JLabel yourAccount = new JLabel("Your account");
+        yourAccount.setFont(FONT);
+        labelPanel.add(yourAccount, BorderLayout.PAGE_END);
 
         //Button panel
         JPanel buttonPanel = new JPanel();
@@ -103,14 +132,16 @@ public class UserGUIFormer implements VisualPresenter {
         buttonPanel.setLayout(new BorderLayout());
 
         JButton makeBetButton = new JButton("Make a bet");
-        makeBetButton.setMinimumSize(new Dimension(30, 60));
+        makeBetButton.setMinimumSize(new Dimension(30, 100));
         makeBetButton.setFocusable(false);
+        makeBetButton.setFont(FONT);
         makeBetButton.addActionListener(e -> exchanger.sendStake(Math.abs(Long.parseLong(betField.getText()))));
 
         buttonPanel.add(makeBetButton, BorderLayout.CENTER);
 
         //Window
         frame.setResizable(false);
+        frame.setFont(FONT);
         frame.pack();
         frame.setVisible(true);
 
@@ -159,7 +190,6 @@ public class UserGUIFormer implements VisualPresenter {
                 message,
                 "Exit", JOptionPane.YES_NO_OPTION);
         log.debug("userChoise = {}", userChoise);
-        System.out.println("userChoise = " + userChoise);
         if (userChoise == JOptionPane.NO_OPTION) {
             exchanger.stopExchange();
             System.exit(0);
