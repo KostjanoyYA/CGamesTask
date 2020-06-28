@@ -34,7 +34,7 @@ public class Response extends Message {
         return "Response{" +
                 super.toString() +
                 "status=" + status + '\'' +
-                "possibleOptions=" + possibleOptions.toString() + '\'' +
+                "possibleOptions=" + possibleOptions + '\'' +
                 '}';
     }
 }

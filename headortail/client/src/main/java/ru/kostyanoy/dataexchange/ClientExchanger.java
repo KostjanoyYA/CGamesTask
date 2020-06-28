@@ -32,6 +32,8 @@ public class ClientExchanger {
     private Optional<ClientStatistics> statistics;
     private final ClientStatistics internalStatistics;
 
+    private String previousRoundResult;
+
     private String[] possibleOptions;
 
     private static final Logger log = LoggerFactory.getLogger(ClientExchanger.class);
@@ -53,6 +55,7 @@ public class ClientExchanger {
         statistics = Optional.empty();
         internalStatistics = new ClientStatistics();
         possibleOptions = new String[0];
+        previousRoundResult = "";
     }
 
     public void startExchange() {
@@ -179,7 +182,7 @@ public class ClientExchanger {
             return;
         }
 
-        log.info("{}: Have got {}", senderName, incomingMessage.getClass().getSimpleName());
+        log.info("Have got {}", incomingMessage);
 
         if (incomingMessage instanceof Request) {
             log.info("{} sent request. Requests from server are not supported", incomingMessage.getSenderName());
@@ -219,6 +222,7 @@ public class ClientExchanger {
             case STAKE -> {
                 if (response.getStatus() == Status.ACCEPTED) {
                     setPlayerState(response);
+                    previousRoundResult = response.getMessageText();
                 } else {
                     log.info("{} rejected {}, message: {}",
                             response.getSenderName(),
@@ -238,9 +242,9 @@ public class ClientExchanger {
         internalStatistics.addSuccessfulRequestsByResponse(response);
         sentRequestMap.remove(response.getMessageID());
 
-        if (response.getStatus() == Status.ACCEPTED) {
-            possibleOptions = setPossibleOptionsByResponse(response);
-        }
+        possibleOptions = (response.getPossibleOptions() != null)
+                ? response.getPossibleOptions().toArray(new String[0])
+                : new String[0];
     }
 
     private void setPlayerState(Response response) {
@@ -253,9 +257,8 @@ public class ClientExchanger {
         return possibleOptions;
     }
 
-    private String[] setPossibleOptionsByResponse(Response response) {
-
-        return response.getMessageText().split("\n");
+    public String getPreviousRoundResult() {
+        return previousRoundResult;
     }
 
     private class ClientStatistics {

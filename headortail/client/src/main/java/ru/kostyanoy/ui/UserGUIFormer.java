@@ -8,6 +8,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.util.Arrays;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
@@ -26,7 +27,10 @@ public class UserGUIFormer implements VisualPresenter {
     }
 
     @Override
-    public void createMainWindow() throws ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
+    public void createMainWindow() throws ClassNotFoundException,
+            UnsupportedLookAndFeelException,
+            InstantiationException,
+            IllegalAccessException {
         javax.swing.UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
         frame = new JFrame(name);
@@ -34,23 +38,17 @@ public class UserGUIFormer implements VisualPresenter {
         frame.setMinimumSize(new Dimension(320, 240));
         frame.setLocationByPlatform(true);
         frame.addWindowListener(new WindowListener() {
-            public void windowActivated(WindowEvent event) {
-            }
+            public void windowActivated(WindowEvent event) {}
 
-            public void windowClosed(WindowEvent event) {
-            }
+            public void windowClosed(WindowEvent event) {}
 
-            public void windowDeactivated(WindowEvent event) {
-            }
+            public void windowDeactivated(WindowEvent event) {}
 
-            public void windowDeiconified(WindowEvent event) {
-            }
+            public void windowDeiconified(WindowEvent event) {}
 
-            public void windowIconified(WindowEvent event) {
-            }
+            public void windowIconified(WindowEvent event) {}
 
-            public void windowOpened(WindowEvent event) {
-            }
+            public void windowOpened(WindowEvent event) {}
 
             public void windowClosing(WindowEvent event) {
                 Object[] options = {"Exit", "Cancel!"};
@@ -82,54 +80,46 @@ public class UserGUIFormer implements VisualPresenter {
         //Right panel
         JPanel inputPanel = new JPanel();
         frame.add(inputPanel, BorderLayout.EAST);
-        inputPanel.setLayout(new BorderLayout());
+        inputPanel.setLayout(new GridLayout(4, 1, 5, 5));
 
         JTextField betField = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
         betField.setText("1");
         betField.setFont(FONT);
-        inputPanel.add(betField, BorderLayout.PAGE_START);
+        inputPanel.add(betField);
 
-//        JRadioButton headRadioButton = new JRadioButton("Head");
-//        headRadioButton.setActionCommand("Head");
-//        headRadioButton.setFont(FONT);
-//        headRadioButton.setSelected(true);
-//
-//        JRadioButton tailRadioButton = new JRadioButton("Tail");
-//        tailRadioButton.setActionCommand("Tail");
-//        tailRadioButton.setFont(FONT);
-//
-//        ButtonGroup group = new ButtonGroup();
-//        group.add(headRadioButton);
-//        group.add(tailRadioButton);
-//        inputPanel.add(headRadioButton, BorderLayout.WEST);
-//        inputPanel.add(tailRadioButton, BorderLayout.EAST);
-
-
-        String[] items = new String[0];
+        String[] items = exchanger.getPossibleOptions();
         comboBox = new JComboBox(items);
-        inputPanel.add(comboBox, BorderLayout.WEST);
+        inputPanel.add(comboBox);
+
+        JLabel roundResultValue = new JLabel(exchanger.getPreviousRoundResult());
+        roundResultValue.setFont(FONT);
+        inputPanel.add(roundResultValue);
 
 
         JLabel accountLabel = new JLabel("0");
         accountLabel.setFont(FONT);
-        inputPanel.add(accountLabel, BorderLayout.PAGE_END);
+        inputPanel.add(accountLabel);
 
         //Left panel
         JPanel labelPanel = new JPanel();
         frame.add(labelPanel, BorderLayout.WEST);
-        labelPanel.setLayout(new BorderLayout());
+        labelPanel.setLayout(new GridLayout(4, 1, 5, 5));
 
         JLabel betLabel = new JLabel("Enter your bet here:");
         betLabel.setFont(FONT);
-        labelPanel.add(betLabel, BorderLayout.PAGE_START);
+        labelPanel.add(betLabel);
 
-        JLabel yourChoice = new JLabel("Your choice");
+        JLabel yourChoice = new JLabel("Your choice:");
         yourChoice.setFont(FONT);
-        labelPanel.add(yourChoice, BorderLayout.WEST);
+        labelPanel.add(yourChoice);
 
-        JLabel yourAccount = new JLabel("Your account");
+        JLabel roundResult = new JLabel("Previous round result:");
+        roundResult.setFont(FONT);
+        labelPanel.add(roundResult);
+
+        JLabel yourAccount = new JLabel("Your account:");
         yourAccount.setFont(FONT);
-        labelPanel.add(yourAccount, BorderLayout.PAGE_END);
+        labelPanel.add(yourAccount);
 
         //Button panel
         JPanel buttonPanel = new JPanel();
@@ -140,8 +130,10 @@ public class UserGUIFormer implements VisualPresenter {
         makeBetButton.setMinimumSize(new Dimension(30, 100));
         makeBetButton.setFocusable(false);
         makeBetButton.setFont(FONT);
-        makeBetButton.addActionListener(e ->
-                exchanger.sendStake(Math.abs(Long.parseLong(betField.getText())), (String) comboBox.getSelectedItem()));
+        makeBetButton.addActionListener(e -> {
+            exchanger.sendStake(Math.abs(Long.parseLong(betField.getText())), (String) comboBox.getSelectedItem());
+            log.debug("comboBox.getSelectedItem() = {}", comboBox.getSelectedItem());
+        });
 
         buttonPanel.add(makeBetButton, BorderLayout.CENTER);
 
@@ -153,12 +145,31 @@ public class UserGUIFormer implements VisualPresenter {
 
         while (!Thread.interrupted()) {
             accountLabel.setText(String.valueOf(exchanger.getPlayerState().getTokenCount()));
-            comboBox = new JComboBox(exchanger.getPossibleOptions());
+            refreshComboBox();
+            roundResultValue.setText(exchanger.getPreviousRoundResult());
             try {
                 Thread.sleep(REFRESH_TIMEOUT);
             } catch (InterruptedException e) {
                 log.warn(e.getMessage(), e);
                 break;
+            }
+        }
+    }
+
+    private void refreshComboBox() {
+        //TODO Исправить список в Combobox
+        for (int i = comboBox.getItemCount()-1; i >= 0; i--) {
+            if (!Arrays.asList(exchanger.getPossibleOptions()).contains(comboBox.getItemAt(i))) {
+                comboBox.remove(i);
+            }
+        }
+
+        for (int i = 0; i < exchanger.getPossibleOptions().length; i++) {
+            for (int j = 0; j < comboBox.getItemCount(); j++) {
+                if (comboBox.getItemAt(j).equals(exchanger.getPossibleOptions()[i])) {
+                    continue;
+                }
+                comboBox.addItem(exchanger.getPossibleOptions()[i]);
             }
         }
     }

@@ -9,4 +9,5 @@ public interface Game {
     long getInputLimit();
     Player createNewPlayer();
     List<String> getPossibleMoves(Player player);
+    String getRoundResult();
 }

@@ -4,6 +4,7 @@ import kostyanoy.game.history.History;
 import kostyanoy.game.history.HistoryTaker;
 import kostyanoy.game.history.RoundHistory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -13,7 +14,8 @@ public class HeadOrTail implements Game, HistoryTaker {
     private static final double WINRATE = 1.9d;
     private static final long LIMIT = 0L;
     private static List<String> allMovies;
-    private static List<String> possibleMovies;
+    private List<String> possibleMovies;
+    private HeadOrTailMoves roundResult;
     private RoundHistory roundHistory;
 
     static {
@@ -28,7 +30,7 @@ public class HeadOrTail implements Game, HistoryTaker {
 
     @Override
     public Player changePlayerStateByGame(long bet, Player player, String choice) {
-        roundHistory.setStateAfterRound(player);
+        roundHistory.setStateBeforeRound(player);
         roundHistory.setStake(bet, choice);
         roundHistory.setStakeTime();
 
@@ -51,9 +53,9 @@ public class HeadOrTail implements Game, HistoryTaker {
         for (int i = 0; i < System.nanoTime() % 10; i++) {
             rnd.nextBoolean();
         }
-        HeadOrTailMoves result = rnd.nextBoolean() ? HeadOrTailMoves.HEAD : HeadOrTailMoves.TAIL;
-        roundHistory.setRoundResultMovement(result);
-        return result;
+        roundResult = rnd.nextBoolean() ? HeadOrTailMoves.HEAD : HeadOrTailMoves.TAIL;
+        roundHistory.setRoundResultMovement(roundResult);
+        return roundResult;
     }
 
     @Override
@@ -78,7 +80,12 @@ public class HeadOrTail implements Game, HistoryTaker {
 
     @Override
     public List<String> getPossibleMoves(Player player) {
-        return player != null ? possibleMovies : null;
+        return player != null ? possibleMovies : new ArrayList<String>();
+    }
+
+    @Override
+    public String getRoundResult() {
+        return roundResult.toString();
     }
 
     @Override

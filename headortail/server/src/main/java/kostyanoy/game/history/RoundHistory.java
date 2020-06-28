@@ -16,6 +16,11 @@ public class RoundHistory extends History {
     private boolean isStakeApproved;
     private LocalDateTime roundResultTime;
 
+    public RoundHistory() {
+        this.stateBeforeRound = new PlayerState();
+        this.stateAfterRound = new PlayerState();
+    }
+
     public PlayerState getStateBeforeRound() {
         return stateBeforeRound;
     }

@@ -38,4 +38,11 @@ public class Player {
     public void setAccount(long account) {
         this.account = account;
     }
+
+    @Override
+    public String toString() {
+        return "Player{" +
+                "account=" + account +
+                '}';
+    }
 }

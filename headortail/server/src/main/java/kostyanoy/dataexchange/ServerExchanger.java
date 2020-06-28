@@ -207,7 +207,6 @@ public class ServerExchanger implements HistoryTaker {
             response.setMessageID(request.getMessageID());
             response.setSenderName(senderName);
             response.setCategory(request.getCategory());
-            response.setPossibleOptions(game.getPossibleMoves(client.getPlayer()));
         } else {
             log.warn("{} sent unsupported category of message", incomingMessage.getSenderName());
             return;
@@ -262,10 +261,11 @@ public class ServerExchanger implements HistoryTaker {
                     break;
                 }
                 response.setStatus(Status.ACCEPTED);
+
                 response.setTokens(game
                         .changePlayerStateByGame(request.getTokens(), client.getPlayer(), request.getMessageText())
                         .getAccount());
-                response.setMessageText("round result: " + request.getMessageText()); //TODO доделать вывод результата на клиенте
+                response.setMessageText(game.getRoundResult());
                 gameHistory.addEvent(client.getNickName(), ((HistoryTaker)game).getHistory());
             }
             case GOODBYE -> {
@@ -290,6 +290,7 @@ public class ServerExchanger implements HistoryTaker {
                 log.warn("{} sent unexpected request category: {}", request.getSenderName(), request);
             }
         }
+        response.setPossibleOptions(game.getPossibleMoves(client.getPlayer()));
         sendMessage(client, response);
     }
 
