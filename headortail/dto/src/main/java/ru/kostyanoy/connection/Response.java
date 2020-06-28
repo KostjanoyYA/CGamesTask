@@ -1,16 +1,19 @@
 package ru.kostyanoy.connection;
 
+import java.util.List;
+
 public class Response extends Message {
 
     private Status status;
-    private String messageText;
+    private List<String> possibleOptions;
 
     public Response() {    }
 
-    public Response(String senderName, MessageCategory category, Status status, long tokens) {
-        super(senderName, category, tokens);
-        this.status = status;
-    }
+    //TODO Убери конструктор, если он без него работает
+//    public Response(String senderName, MessageCategory category, Status status, long tokens) {
+//        super(senderName, category, tokens);
+//        this.status = status;
+//    }
 
     public void setStatus(Status status) { this.status = status;}
 
@@ -18,12 +21,12 @@ public class Response extends Message {
         return status;
     }
 
-    public String getMessageText() {
-        return messageText;
+    public List<String> getPossibleOptions() {
+        return possibleOptions;
     }
 
-    public void setMessageText(String messageText) {
-        this.messageText = messageText;
+    public void setPossibleOptions(List<String> possibleOptions) {
+        this.possibleOptions = possibleOptions;
     }
 
     @Override
@@ -31,7 +34,7 @@ public class Response extends Message {
         return "Response{" +
                 super.toString() +
                 "status=" + status + '\'' +
-                ", messageText='" + messageText + '\'' +
+                "possibleOptions=" + possibleOptions.toString() + '\'' +
                 '}';
     }
 }

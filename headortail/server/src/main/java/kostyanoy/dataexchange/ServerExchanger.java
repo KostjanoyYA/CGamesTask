@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import kostyanoy.game.Game;
+import kostyanoy.game.history.GameHistory;
+import kostyanoy.game.history.History;
+import kostyanoy.game.history.HistoryTaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.kostyanoy.connection.*;
@@ -15,7 +18,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class ServerExchanger {
+public class ServerExchanger implements HistoryTaker {
     private String senderName;
     private final List<Client> unnamedClients;
     private final ConcurrentHashMap<String, Client> clientsMap;
@@ -23,10 +26,13 @@ public class ServerExchanger {
     private ServerSocket serverSocket;
     ObjectMapper mapper;
     private final Game game;
+
+    private History gameHistory;
     private static final Logger log = LoggerFactory.getLogger(ServerExchanger.class);
 
     private Thread messageListenerThread;
     private Thread socketListenerThread;
+
 
     static {
         Connection.customizeConnectionClass("connection.properties");
@@ -61,6 +67,7 @@ public class ServerExchanger {
             throw new IllegalArgumentException("Game is null");
         }
         this.game = game;
+        this.gameHistory = new GameHistory(serverNickName);
     }
 
     public String getSenderName() {
@@ -138,7 +145,6 @@ public class ServerExchanger {
 
                     } catch (IOException e) {
                         log.warn(e.getMessage(), e);
-                        continue;
                     }
                 }
 
@@ -201,7 +207,7 @@ public class ServerExchanger {
             response.setMessageID(request.getMessageID());
             response.setSenderName(senderName);
             response.setCategory(request.getCategory());
-
+            response.setPossibleOptions(game.getPossibleMoves(client.getPlayer()));
         } else {
             log.warn("{} sent unsupported category of message", incomingMessage.getSenderName());
             return;
@@ -244,7 +250,7 @@ public class ServerExchanger {
                     break;
                 }
 
-                if (!game.isBetAccepted(client.getPlayer(), request.getTokens())) {
+                if (!game.isBetAccepted(client.getPlayer(), request.getTokens(), request.getMessageText())) {
                     response.setMessageText("Illegal bet "
                             + request.getTokens()
                             + " in the game. Player account "
@@ -252,12 +258,15 @@ public class ServerExchanger {
                     log.info("Illegal bet {} in the game. Player account {}",
                             request.getTokens(),
                             client.getPlayer().getAccount());
+                    gameHistory.addEvent(client.getNickName(), ((HistoryTaker)game).getHistory());
                     break;
                 }
                 response.setStatus(Status.ACCEPTED);
                 response.setTokens(game
-                        .changePlayerStateByGame(request.getTokens(), client.getPlayer())
+                        .changePlayerStateByGame(request.getTokens(), client.getPlayer(), request.getMessageText())
                         .getAccount());
+                response.setMessageText("round result: " + request.getMessageText()); //TODO доделать вывод результата на клиенте
+                gameHistory.addEvent(client.getNickName(), ((HistoryTaker)game).getHistory());
             }
             case GOODBYE -> {
                 response.setStatus(Status.ACCEPTED);
@@ -284,14 +293,8 @@ public class ServerExchanger {
         sendMessage(client, response);
     }
 
-    private boolean sendMessageIfNotRegisteredName(Client client, Request request) { // returns true if message was sent
-        boolean isNotRegisteredName = isNullOrEmpty(client.getNickName()) || !clientsMap.containsKey(request.getSenderName());
-        if (isNotRegisteredName) {
-            log.info("Client named {} is not registered", client.getNickName());
-            Response response = new Response(senderName, request.getCategory(), Status.REJECTED, game.getInputLimit());
-            response.setMessageText("Not registered client name '" + request.getSenderName() + "'");
-            sendMessage(client, response);
-        }
-        return isNotRegisteredName;
+    @Override
+    public History getHistory() {
+        return gameHistory;
     }
 }

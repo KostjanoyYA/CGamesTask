@@ -7,10 +7,14 @@ public class Request extends Message {
     public Request() {}
 
     public Request(String senderName, MessageCategory category, long tokens) {
-        super(senderName, category, tokens);
+        super(senderName, category, tokens, null);
     }
 
-    @JsonSetter("messageID")
+    public Request(String senderName, MessageCategory category, long tokens, String messageText) {
+        super(senderName, category, tokens, messageText);
+    }
+
+    @JsonSetter("messageID") //TODO Убрать, если не влияет
     public void setMessageID(String messageID) {
         super.setMessageID(messageID);
     }

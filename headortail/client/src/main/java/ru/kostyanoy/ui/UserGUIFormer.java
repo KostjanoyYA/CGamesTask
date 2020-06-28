@@ -14,6 +14,7 @@ import static javax.swing.JOptionPane.showMessageDialog;
 public class UserGUIFormer implements VisualPresenter {
 
     private JFrame frame;
+    private JComboBox comboBox;
     private final String name = "Heads and tails client";
     private final ClientExchanger exchanger;
     private static final int REFRESH_TIMEOUT = 1000;
@@ -88,21 +89,25 @@ public class UserGUIFormer implements VisualPresenter {
         betField.setFont(FONT);
         inputPanel.add(betField, BorderLayout.PAGE_START);
 
-        JRadioButton headRadioButton = new JRadioButton("Head");
-        headRadioButton.setActionCommand("Head");
-        headRadioButton.setFont(FONT);
-        headRadioButton.setSelected(true);
+//        JRadioButton headRadioButton = new JRadioButton("Head");
+//        headRadioButton.setActionCommand("Head");
+//        headRadioButton.setFont(FONT);
+//        headRadioButton.setSelected(true);
+//
+//        JRadioButton tailRadioButton = new JRadioButton("Tail");
+//        tailRadioButton.setActionCommand("Tail");
+//        tailRadioButton.setFont(FONT);
+//
+//        ButtonGroup group = new ButtonGroup();
+//        group.add(headRadioButton);
+//        group.add(tailRadioButton);
+//        inputPanel.add(headRadioButton, BorderLayout.WEST);
+//        inputPanel.add(tailRadioButton, BorderLayout.EAST);
 
-        JRadioButton tailRadioButton = new JRadioButton("Tail");
-        tailRadioButton.setActionCommand("Tail");
-        tailRadioButton.setFont(FONT);
 
-        ButtonGroup group = new ButtonGroup();
-        group.add(headRadioButton);
-        group.add(tailRadioButton);
-        inputPanel.add(headRadioButton, BorderLayout.WEST);
-        inputPanel.add(tailRadioButton, BorderLayout.EAST);
-
+        String[] items = new String[0];
+        comboBox = new JComboBox(items);
+        inputPanel.add(comboBox, BorderLayout.WEST);
 
 
         JLabel accountLabel = new JLabel("0");
@@ -135,7 +140,8 @@ public class UserGUIFormer implements VisualPresenter {
         makeBetButton.setMinimumSize(new Dimension(30, 100));
         makeBetButton.setFocusable(false);
         makeBetButton.setFont(FONT);
-        makeBetButton.addActionListener(e -> exchanger.sendStake(Math.abs(Long.parseLong(betField.getText()))));
+        makeBetButton.addActionListener(e ->
+                exchanger.sendStake(Math.abs(Long.parseLong(betField.getText())), (String) comboBox.getSelectedItem()));
 
         buttonPanel.add(makeBetButton, BorderLayout.CENTER);
 
@@ -147,6 +153,7 @@ public class UserGUIFormer implements VisualPresenter {
 
         while (!Thread.interrupted()) {
             accountLabel.setText(String.valueOf(exchanger.getPlayerState().getTokenCount()));
+            comboBox = new JComboBox(exchanger.getPossibleOptions());
             try {
                 Thread.sleep(REFRESH_TIMEOUT);
             } catch (InterruptedException e) {

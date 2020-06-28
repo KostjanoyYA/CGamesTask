@@ -32,6 +32,8 @@ public class ClientExchanger {
     private Optional<ClientStatistics> statistics;
     private final ClientStatistics internalStatistics;
 
+    private String[] possibleOptions;
+
     private static final Logger log = LoggerFactory.getLogger(ClientExchanger.class);
 
     static {
@@ -50,9 +52,8 @@ public class ClientExchanger {
         playerState = new PlayerState(0, "");
         statistics = Optional.empty();
         internalStatistics = new ClientStatistics();
+        possibleOptions = new String[0];
     }
-
-
 
     public void startExchange() {
         messageListenerThread = new Thread(() -> {
@@ -87,7 +88,7 @@ public class ClientExchanger {
     }
 
 
-    public boolean sendMessage(Message message) {
+    public void sendMessage(Message message) {
         try {
             connection.getWriter().println(mapper.writeValueAsString(message));
             connection.getWriter().flush();
@@ -95,9 +96,7 @@ public class ClientExchanger {
             log.info("Sent message {}", message.toString());
         } catch (JsonProcessingException e) {
             log.warn(e.getMessage(), e);
-            return false;
         }
-        return true;
     }
 
     private void sleep(int timeout) {
@@ -160,9 +159,11 @@ public class ClientExchanger {
         stopExchange();
     }
 
-    public void sendStake(long stake) { //TODO , Choice choice в параметры конструктора
-        if (isRemoteAnswering.get() && isSenderNameAccepted.get() && stake > 0) {
-            sendMessage(new Request(senderName, MessageCategory.STAKE, stake));
+    public void sendStake(long stake, String option) {
+        if (option == null || option.isEmpty() || stake <= 0) return;
+
+        if (isRemoteAnswering.get() && isSenderNameAccepted.get()) {
+            sendMessage(new Request(senderName, MessageCategory.STAKE, stake, option));
         }
     }
 
@@ -173,8 +174,6 @@ public class ClientExchanger {
 
         String jsonMessage = connection.getReader().readLine();
         Message incomingMessage = mapper.readValue(jsonMessage, Message.class);
-
-        log.debug("incomingMessage = {}", incomingMessage.toString());
 
         if (incomingMessage == null) {
             return;
@@ -196,6 +195,7 @@ public class ClientExchanger {
         }
 
         isRemoteAnswering.set(true);
+        requestDelayTimer.restartTimer();
 
         if (!sentRequestMap.containsKey(response.getMessageID())) {
             log.warn("{} sent unrequested response: {}", response.getSenderName(), response);
@@ -230,21 +230,32 @@ public class ClientExchanger {
                 isRemoteAnswering.set(false);
                 requestDelayTimer.stopAndResetTimer(0);
             }
-            case SERVICE -> {setPlayerState(response);}
+            case SERVICE -> setPlayerState(response);
 
             default -> log.warn("{} sent unexpected response category: {}", response.getSenderName(), response);
         }
 
         internalStatistics.addSuccessfulRequestsByResponse(response);
-
         sentRequestMap.remove(response.getMessageID());
-        requestDelayTimer.restartTimer();
+
+        if (response.getStatus() == Status.ACCEPTED) {
+            possibleOptions = setPossibleOptionsByResponse(response);
+        }
     }
 
     private void setPlayerState(Response response) {
         playerState.setTokenCount(isSenderNameAccepted.get()
                 ? response.getTokens()
                 : playerState.getTokenCount());
+    }
+
+    public String[] getPossibleOptions() {
+        return possibleOptions;
+    }
+
+    private String[] setPossibleOptionsByResponse(Response response) {
+
+        return response.getMessageText().split("\n");
     }
 
     private class ClientStatistics {

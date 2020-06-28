@@ -20,6 +20,8 @@ public class Message implements Serializable {
 
     private MessageCategory category;
 
+    private String messageText;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime sendTime;
 
@@ -30,12 +32,13 @@ public class Message implements Serializable {
         this.sendTime = LocalDateTime.now();
     }
 
-    public Message(String senderName, MessageCategory category, long tokens) {
+    public Message(String senderName, MessageCategory category, long tokens, String messageText) {
         this.messageID = UUIDGenerator.INSTANCE.nextID();
         this.senderName = senderName;
         this.sendTime = LocalDateTime.now();
         this.category = category;
         this.tokens = tokens;
+        this.messageText = messageText;
     }
 
     public String getSenderName() {
@@ -70,14 +73,23 @@ public class Message implements Serializable {
 
     public long getTokens() { return tokens; }
 
+    public String getMessageText() {
+        return messageText;
+    }
+
+    public void setMessageText(String messageText) {
+        this.messageText = messageText;
+    }
+
     @Override
     public String toString() {
         return "Message{" +
                 "messageID='" + messageID + '\'' +
                 ", senderName='" + senderName + '\'' +
-                ", category=" + category +
-                ", sendTime=" + sendTime +
-                ", tokens=" + tokens +
+                ", category=" + category + '\'' +
+                ", sendTime=" + sendTime + '\'' +
+                ", tokens=" + tokens + '\'' +
+                ", messageText='" + messageText + '\'' +
                 '}';
     }
 }

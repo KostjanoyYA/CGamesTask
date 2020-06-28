@@ -1,28 +1,59 @@
 package kostyanoy.game;
 
+import kostyanoy.game.history.History;
+import kostyanoy.game.history.HistoryTaker;
+import kostyanoy.game.history.RoundHistory;
+
+import java.util.List;
 import java.util.Random;
 
-public class HeadOrTail implements Game {
+public class HeadOrTail implements Game, HistoryTaker {
 
     private static Random rnd = new Random();
     private static final double WINRATE = 1.9d;
     private static final long LIMIT = 0L;
+    private static List<String> allMovies;
+    private static List<String> possibleMovies;
+    private RoundHistory roundHistory;
 
-    static  {
+    static {
         Player.customizePlayer("defaultplayer.properties");
+        allMovies = HeadOrTailMoves.getAllMoves();
+    }
+
+    public HeadOrTail() {
+        possibleMovies = allMovies;
+        roundHistory = new RoundHistory();
     }
 
     @Override
-    public Player changePlayerStateByGame(long bet, Player player) {
-        if (!isAllowed(player) || !isBetAccepted(player, bet)) {
+    public Player changePlayerStateByGame(long bet, Player player, String choice) {
+        roundHistory.setStateAfterRound(player);
+        roundHistory.setStake(bet, choice);
+        roundHistory.setStakeTime();
+
+        if (!isAllowed(player) || !isBetAccepted(player, bet, choice)) {
+            roundHistory.setStakeApproved(false);
             return player;
         }
 
+        roundHistory.setStakeApproved(true);
+        player.setAccount(player.getAccount()
+                + (HeadOrTailMoves.valueOf(choice) == coinDrop()
+                ? Math.round(WINRATE * bet) - bet
+                : -bet));
+        roundHistory.setRoundResultTime();
+        roundHistory.setStateAfterRound(player);
+        return player;
+    }
+
+    private HeadOrTailMoves coinDrop() {
         for (int i = 0; i < System.nanoTime() % 10; i++) {
             rnd.nextBoolean();
         }
-        player.setAccount(player.getAccount() + (rnd.nextBoolean() ? Math.round(WINRATE * bet) : -bet));
-        return player;
+        HeadOrTailMoves result = rnd.nextBoolean() ? HeadOrTailMoves.HEAD : HeadOrTailMoves.TAIL;
+        roundHistory.setRoundResultMovement(result);
+        return result;
     }
 
     @Override
@@ -31,8 +62,8 @@ public class HeadOrTail implements Game {
     }
 
     @Override
-    public boolean isBetAccepted(Player player, long bet) {
-        return bet > 0 && bet <= player.getAccount();
+    public boolean isBetAccepted(Player player, long bet, String choice) {
+        return bet > 0 && bet <= player.getAccount() && possibleMovies.contains(choice);
     }
 
     @Override
@@ -43,5 +74,15 @@ public class HeadOrTail implements Game {
     @Override
     public Player createNewPlayer() {
         return Player.createDefaultPlayer();
+    }
+
+    @Override
+    public List<String> getPossibleMoves(Player player) {
+        return player != null ? possibleMovies : null;
+    }
+
+    @Override
+    public History getHistory() {
+        return roundHistory;
     }
 }
