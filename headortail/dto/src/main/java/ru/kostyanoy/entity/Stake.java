@@ -16,4 +16,12 @@ public class Stake {
     public String getOption() {
         return option;
     }
+
+    @Override
+    public String toString() {
+        return "Stake{" +
+                "tokens=" + tokens +
+                ", option='" + option + '\'' +
+                '}';
+    }
 }

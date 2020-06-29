@@ -30,4 +30,26 @@ public class GameHistory extends History {
         newList.add(event);
         playerHistories.put(nickName, newList);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder historyString = new StringBuilder("GameHistory{serverNickName=");
+        historyString.append(serverNickName);
+        historyString.append(",\n");
+        for (String playerNickName : playerHistories.keySet()) {
+            historyString.append("playerNickName=");
+            historyString.append(playerNickName);
+            historyString.append(":\n");
+
+            for (History roundHistory : playerHistories.get(playerNickName)) {
+                historyString.append(roundHistory.toString());
+                historyString.append("\n");
+            }
+
+            historyString.append("\n\n");
+        }
+        historyString.append("}\n");
+
+        return historyString.toString();
+    }
 }

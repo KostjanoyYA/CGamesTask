@@ -81,4 +81,17 @@ public class RoundHistory extends History {
     public void addEvent(String nickName, History event) {
 
     }
+
+    @Override
+    public String toString() {
+        return "RoundHistory{" +
+                "stateBeforeRound=" + stateBeforeRound +
+                ", stateAfterRound=" + stateAfterRound +
+                ", roundResultMovement=" + roundResultMovement +
+                ", stakeTime=" + stakeTime +
+                ", stake=" + stake +
+                ", isStakeApproved=" + isStakeApproved +
+                ", roundResultTime=" + roundResultTime +
+                '}';
+    }
 }

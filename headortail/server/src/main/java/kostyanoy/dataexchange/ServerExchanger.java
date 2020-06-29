@@ -48,6 +48,7 @@ public class ServerExchanger implements HistoryTaker {
             senderName = PropertyLoader.getPropertiesMap().get("server.nickname");
             serverPort = Integer.parseInt(PropertyLoader.getPropertiesMap().get("server.port"));
         }
+        this.gameHistory = new GameHistory(senderName);
     }
 
     public ServerExchanger(String serverNickName, int serverPort, Game game) {
@@ -67,7 +68,6 @@ public class ServerExchanger implements HistoryTaker {
             throw new IllegalArgumentException("Game is null");
         }
         this.game = game;
-        this.gameHistory = new GameHistory(serverNickName);
     }
 
     public String getSenderName() {
@@ -117,9 +117,6 @@ public class ServerExchanger implements HistoryTaker {
                 while (!Thread.interrupted()) {
                     unnamedClients.add(new Client(new Connection().connect(serverSocket.accept())));
                     log.info("Added new client (temp id {})", unnamedClients.get(unnamedClients.size() - 1).hashCode());
-
-                    log.debug("unnamedClients: {})", unnamedClients);
-
                     Thread.sleep(Connection.PING_TIMEOUT >> 2);
                 }
             } catch (InterruptedException | IOException e) {

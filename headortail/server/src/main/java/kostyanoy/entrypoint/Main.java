@@ -3,6 +3,7 @@ package kostyanoy.entrypoint;
 import kostyanoy.dataexchange.ServerExchanger;
 import kostyanoy.game.Game;
 import kostyanoy.game.HeadOrTail;
+import kostyanoy.game.history.History;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,14 @@ public class Main {
         }
         server.stopExchange();
         log.info("{}: Stopped", server.getSenderName());
+        printHistory(server.getHistory());
         System.exit(0);
+    }
+
+    private static void printHistory(History history) {
+        if (history == null) {
+            return;
+        }
+        log.info("\n\n\n****Game history*****\n{}", history.toString());
     }
 }

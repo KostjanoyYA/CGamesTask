@@ -130,11 +130,8 @@ public class UserGUIFormer implements VisualPresenter {
         makeBetButton.setMinimumSize(new Dimension(30, 100));
         makeBetButton.setFocusable(false);
         makeBetButton.setFont(FONT);
-        makeBetButton.addActionListener(e -> {
-            exchanger.sendStake(Math.abs(Long.parseLong(betField.getText())), (String) comboBox.getSelectedItem());
-            log.debug("comboBox.getSelectedItem() = {}", comboBox.getSelectedItem());
-        });
-
+        makeBetButton.addActionListener(e ->
+                exchanger.sendStake(Math.abs(Long.parseLong(betField.getText())), (String) comboBox.getSelectedItem()));
         buttonPanel.add(makeBetButton, BorderLayout.CENTER);
 
         //Window
@@ -157,20 +154,25 @@ public class UserGUIFormer implements VisualPresenter {
     }
 
     private void refreshComboBox() {
-        //TODO Исправить список в Combobox
-        for (int i = comboBox.getItemCount()-1; i >= 0; i--) {
+        int itemCount = comboBox.getItemCount();
+        for (int i = itemCount - 1; i >= 0; i--) {
             if (!Arrays.asList(exchanger.getPossibleOptions()).contains(comboBox.getItemAt(i))) {
                 comboBox.remove(i);
             }
         }
 
+        boolean hasFound = false;
         for (int i = 0; i < exchanger.getPossibleOptions().length; i++) {
             for (int j = 0; j < comboBox.getItemCount(); j++) {
                 if (comboBox.getItemAt(j).equals(exchanger.getPossibleOptions()[i])) {
-                    continue;
+                    hasFound = true;
+                    break;
                 }
+            }
+            if (!hasFound) {
                 comboBox.addItem(exchanger.getPossibleOptions()[i]);
             }
+            hasFound = false;
         }
     }
 
@@ -207,7 +209,6 @@ public class UserGUIFormer implements VisualPresenter {
                 frame,
                 message,
                 "Exit", JOptionPane.YES_NO_OPTION);
-        log.debug("userChoise = {}", userChoise);
         if (userChoise == JOptionPane.NO_OPTION) {
             exchanger.stopExchange();
             System.exit(0);

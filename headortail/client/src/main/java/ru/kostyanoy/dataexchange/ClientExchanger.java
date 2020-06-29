@@ -46,7 +46,7 @@ public class ClientExchanger {
         isRemoteAnswering = new AtomicBoolean(false);
         isSenderNameAccepted = new AtomicBoolean(false);
         this.connection = new Connection();
-        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT * 10);
+        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT * 5000);
         responseDelay = Connection.PING_TIMEOUT * 10;
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         sentRequestMap = new ConcurrentHashMap<>();
@@ -111,13 +111,9 @@ public class ClientExchanger {
     }
 
     public boolean hasCheckedNickName(String nickName) {
-        log.debug("!!!!!!!!!!!!Before if");
-        log.debug("isRemoteAnswering.get() = {}, !isSenderNameAccepted.get() = {}", isRemoteAnswering.get(), !isSenderNameAccepted.get());
         if (isRemoteAnswering.get() && !isSenderNameAccepted.get()) {
-            log.debug("!!!!!!!!!!!!In the if");
             sendMessage(new Request(nickName, MessageCategory.GREETING, 0));
         }
-        log.debug("!!!!!!!!!!!!After if");
         sleep(Connection.PING_TIMEOUT * 2);
         return isSenderNameAccepted.get();
     }
@@ -140,13 +136,13 @@ public class ClientExchanger {
         while (!requestDelayTimer.hasTimesUp()) {
             if (!connection.isConnected()) {
                 isRemoteAnswering.set(false);
-                log.debug("Server is disconnected");
+                log.info("Server is disconnected");
                 break;
             }
 
             sendMessage(new Request(senderName, MessageCategory.SERVICE, playerState.getTokenCount()));
 
-            sleep(Connection.PING_TIMEOUT >> 1);
+            sleep(Connection.PING_TIMEOUT*2);
 
             sentRequestMap.forEach((key, value) -> {
                 if ((System.currentTimeMillis()
@@ -158,7 +154,6 @@ public class ClientExchanger {
                 }
             });
         }
-        log.debug("Exchange stopped from 'checkExchange'");
         stopExchange();
     }
 
@@ -217,6 +212,9 @@ public class ClientExchanger {
                         : null;
                 isSenderNameAccepted.set(senderName != null);
                 setPlayerState(response);
+                possibleOptions = (response.getPossibleOptions() != null)
+                        ? response.getPossibleOptions().toArray(new String[0])
+                        : new String[0];
             }
 
             case STAKE -> {
@@ -233,18 +231,20 @@ public class ClientExchanger {
             case GOODBYE -> {
                 isRemoteAnswering.set(false);
                 requestDelayTimer.stopAndResetTimer(0);
+                possibleOptions = new String[0];
             }
-            case SERVICE -> setPlayerState(response);
+            case SERVICE -> {
+                setPlayerState(response);
+                possibleOptions = (response.getPossibleOptions() != null)
+                        ? response.getPossibleOptions().toArray(new String[0])
+                        : new String[0];
+            }
 
             default -> log.warn("{} sent unexpected response category: {}", response.getSenderName(), response);
         }
 
         internalStatistics.addSuccessfulRequestsByResponse(response);
         sentRequestMap.remove(response.getMessageID());
-
-        possibleOptions = (response.getPossibleOptions() != null)
-                ? response.getPossibleOptions().toArray(new String[0])
-                : new String[0];
     }
 
     private void setPlayerState(Response response) {

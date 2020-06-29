@@ -18,4 +18,11 @@ public class PlayerState implements Serializable {
     public void setTokenCount(long tokenCount) {
         this.tokenCount = tokenCount;
     }
+
+    @Override
+    public String toString() {
+        return "PlayerState{" +
+                "tokenCount=" + tokenCount +
+                '}';
+    }
 }
