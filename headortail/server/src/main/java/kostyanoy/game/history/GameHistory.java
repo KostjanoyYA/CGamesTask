@@ -5,30 +5,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class GameHistory extends History {
+public class GameHistory implements History {
     private final String serverNickName;
-    private final Map<String, List<History>> playerHistories;
+    private Map<String, List<HistoryEvent>> playerHistories;
 
     public GameHistory(String serverNickName) {
         this.serverNickName = serverNickName;
         playerHistories = new ConcurrentHashMap<>();
     }
 
-    public String getServerNickName() {
-        return serverNickName;
-    }
-
-    public Map<String, List<History>> getPlayerHistories() {
-        return playerHistories;
+    @Override
+    public void addEvent(String nickName, HistoryEvent event) {
+        List<HistoryEvent> newList = !playerHistories.containsKey(nickName)
+                ? new ArrayList<>()
+                : playerHistories.get(nickName);
+        newList.add(event.clone());
+        playerHistories.put(nickName, newList);
     }
 
     @Override
-    public void addEvent(String nickName, History event) {
-        List<History> newList = !playerHistories.containsKey(nickName)
-                ? new ArrayList<>()
-                : playerHistories.get(nickName);
-        newList.add(event);
-        playerHistories.put(nickName, newList);
+    public List<HistoryEvent> getEvents(String nickName) {
+        return playerHistories.get(nickName);
     }
 
     @Override
@@ -41,14 +38,12 @@ public class GameHistory extends History {
             historyString.append(playerNickName);
             historyString.append(":\n");
 
-            for (History roundHistory : playerHistories.get(playerNickName)) {
-                historyString.append(roundHistory.toString());
+            for (HistoryEvent event : playerHistories.get(playerNickName)) {
+                historyString.append(event.toString());
                 historyString.append("\n");
             }
-
-            historyString.append("\n\n");
         }
-        historyString.append("}\n");
+        historyString.append("}\n\n");
 
         return historyString.toString();
     }

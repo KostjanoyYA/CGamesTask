@@ -1,5 +1,8 @@
 package kostyanoy.game.history;
 
-public abstract class History {
-    public abstract void addEvent(String nickName, History event);
+import java.util.List;
+
+public interface History {
+    void addEvent(String nickName, HistoryEvent event);
+    List<HistoryEvent> getEvents(String nickName);
 }

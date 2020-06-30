@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import kostyanoy.game.Game;
+import kostyanoy.game.RoundResult;
 import kostyanoy.game.history.GameHistory;
 import kostyanoy.game.history.History;
 import kostyanoy.game.history.HistoryTaker;
@@ -14,6 +15,7 @@ import ru.kostyanoy.propertyloader.PropertyLoader;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -214,7 +216,7 @@ public class ServerExchanger implements HistoryTaker {
                 if (!hasCheckedNickName(request.getSenderName())) {
                     response.setStatus(Status.REJECTED);
                     response.setTokens(game.getInputLimit());
-                    response.setMessageText("Username is busy, null or empty");
+                    response.setMessageText("Busy username");
                     log.info("Client (id: {}) asked for adding busy or illegal nickname '{}'",
                             client.hashCode(), request.getSenderName());
                 } else {
@@ -223,6 +225,7 @@ public class ServerExchanger implements HistoryTaker {
 
                     response.setStatus(Status.ACCEPTED);
                     response.setTokens(client.getPlayer().getAccount());
+                    response.setPossibleOptions(game.getPossibleMovies());
 
                     clientsMap.put(client.getNickName(), client);
                     unnamedClients.remove(client);
@@ -233,41 +236,39 @@ public class ServerExchanger implements HistoryTaker {
             case STAKE -> {
                 response.setStatus(Status.REJECTED);
                 response.setTokens(client.getPlayer().getAccount());
+                response.setPossibleOptions(game.getPossibleMovies());
 
                 if (isNullOrEmpty(client.getNickName()) || !clientsMap.containsKey(request.getSenderName())) {
                     log.info("Client named {} is not registered", client.getNickName());
-                    response.setMessageText("Not registered client name '" + request.getSenderName() + "'");
+                    response.setMessageText("Not registered client '" + request.getSenderName() + "'");
                     break;
                 }
 
-                if (!game.isAllowed(client.getPlayer())) {
-                    response.setMessageText("Client '" + client.getNickName() + "' is not allowed to the game");
-                    log.info("Client {} is not allowed to the game", client.getNickName());
+                RoundResult roundResult = game.changePlayerStateByGame(
+                        request.getTokens(),
+                        client.getPlayer(),
+                        request.getMessageText());
+
+                gameHistory.addEvent(client.getNickName(), roundResult);
+                response.setTokens(client.getPlayer().getAccount());
+                response.setPossibleOptions(roundResult.getPossibleMovies());
+                response.setMessageText(roundResult.getRoundResultMovement());
+
+                if (!roundResult.isPlayerAllowed()) {
+                    log.info("Client {} {}", client.getNickName(), roundResult.getRoundResultMovement());
                     break;
                 }
 
-                if (!game.isBetAccepted(client.getPlayer(), request.getTokens(), request.getMessageText())) {
-                    response.setMessageText("Illegal bet "
-                            + request.getTokens()
-                            + " in the game. Player account "
-                            + client.getPlayer().getAccount());
-                    log.info("Illegal bet {} in the game. Player account {}",
-                            request.getTokens(),
-                            client.getPlayer().getAccount());
-                    gameHistory.addEvent(client.getNickName(), ((HistoryTaker)game).getHistory());
+                if (!roundResult.isStakeApproved()) {
+                    log.info("{}'s {}", client.getNickName(), roundResult.getRoundResultMovement());
                     break;
                 }
                 response.setStatus(Status.ACCEPTED);
-
-                response.setTokens(game
-                        .changePlayerStateByGame(request.getTokens(), client.getPlayer(), request.getMessageText())
-                        .getAccount());
-                response.setMessageText(game.getRoundResult());
-                gameHistory.addEvent(client.getNickName(), ((HistoryTaker)game).getHistory());
             }
             case GOODBYE -> {
                 response.setStatus(Status.ACCEPTED);
                 response.setTokens(game.getInputLimit());
+                response.setPossibleOptions(new ArrayList<>());
 
                 log.info("Client {} left the server", client.getNickName());
                 if (clientsMap.contains(client)) {
@@ -275,19 +276,20 @@ public class ServerExchanger implements HistoryTaker {
                 }
                 sendMessage(client, response);
                 client.getConnection().disconnect();
+                return;
             }
             case SERVICE -> {
                 long tokens = client.getPlayer() == null ? game.getInputLimit() : client.getPlayer().getAccount();
                 response.setStatus(Status.ACCEPTED);
                 response.setTokens(tokens);
+                response.setPossibleOptions(game.getPossibleMovies());
             }
             default -> {
                 response.setCategory(MessageCategory.SERVICE);
-                response.setMessageText("Illegal request category '" + request.getCategory() + "' (message id =" + request.getMessageID() + ")");
+                response.setMessageText("Illegal request category");
                 log.warn("{} sent unexpected request category: {}", request.getSenderName(), request);
             }
         }
-        response.setPossibleOptions(game.getPossibleMoves(client.getPlayer()));
         sendMessage(client, response);
     }
 

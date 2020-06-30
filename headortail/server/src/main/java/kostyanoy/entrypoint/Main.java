@@ -38,6 +38,7 @@ public class Main {
 
     private static void printHistory(History history) {
         if (history == null) {
+            log.info("\n\n\n****Game history is empty*****\n");
             return;
         }
         log.info("\n\n\n****Game history*****\n{}", history.toString());

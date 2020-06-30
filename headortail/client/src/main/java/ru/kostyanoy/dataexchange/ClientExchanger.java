@@ -51,7 +51,7 @@ public class ClientExchanger {
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         sentRequestMap = new ConcurrentHashMap<>();
         expiredRequestMap = new ConcurrentHashMap<>();
-        playerState = new PlayerState(0, "");
+        playerState = new PlayerState(0);
         statistics = Optional.empty();
         internalStatistics = new ClientStatistics();
         possibleOptions = new String[0];
@@ -218,9 +218,9 @@ public class ClientExchanger {
             }
 
             case STAKE -> {
+                previousRoundResult = response.getMessageText();
                 if (response.getStatus() == Status.ACCEPTED) {
                     setPlayerState(response);
-                    previousRoundResult = response.getMessageText();
                 } else {
                     log.info("{} rejected {}, message: {}",
                             response.getSenderName(),

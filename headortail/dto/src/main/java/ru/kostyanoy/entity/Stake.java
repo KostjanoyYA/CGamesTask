@@ -1,6 +1,6 @@
 package ru.kostyanoy.entity;
 
-public class Stake {
+public class Stake implements Cloneable {
     private long tokens;
     private String option;
 
@@ -15,6 +15,11 @@ public class Stake {
 
     public String getOption() {
         return option;
+    }
+
+    @Override
+    public Object clone() {
+        return new Stake(this.tokens, this.option);
     }
 
     @Override

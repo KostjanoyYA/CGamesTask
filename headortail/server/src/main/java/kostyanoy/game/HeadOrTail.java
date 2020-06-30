@@ -1,68 +1,82 @@
 package kostyanoy.game;
 
-import kostyanoy.game.history.History;
-import kostyanoy.game.history.HistoryTaker;
-import kostyanoy.game.history.RoundHistory;
-
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
-public class HeadOrTail implements Game, HistoryTaker {
+public class HeadOrTail implements Game {
 
     private static final Random rnd = new Random();
     private static final double WINRATE = 1.9d;
     private static final long LIMIT = 0L;
     private static final List<String> allMovies;
     private List<String> possibleMovies;
-    private HeadOrTailMoves roundResult;
-    private final RoundHistory roundHistory;
+    private final RoundResult roundResult;
 
     static {
         Player.customizePlayer("defaultplayer.properties");
-        allMovies = HeadOrTailMoves.getAllMoves();
+        allMovies = Arrays.stream(HeadOrTailMoves.values())
+                .map(Enum::toString)
+                .collect(Collectors.toList());
     }
 
     public HeadOrTail() {
-        possibleMovies = allMovies;
-        roundHistory = new RoundHistory();
+        roundResult = new RoundResult();
     }
 
     @Override
-    public Player changePlayerStateByGame(long bet, Player player, String choice) {
+    public List<String> getPossibleMovies() {
+        return possibleMovies;
+    }
+
+    @Override
+    public RoundResult changePlayerStateByGame(long bet, Player player, String choice) {
+        roundResult.setStateAfterRound(player);
+        roundResult.setRoundResultMovement(null);
+        roundResult.setRoundResultTime();
+        roundResult.setPossibleMovies(null);
+
+        roundResult.setStakeApproved(false);
+        roundResult.setStateBeforeRound(player);
+        roundResult.setStake(bet, choice);
+        roundResult.setStakeTime();
+
+        roundResult.setPlayerAllowed(isAllowed(player));
+        if (!roundResult.isPlayerAllowed()) {
+            roundResult.setRoundResultMovement(HeadOrTailMessages.PLAYER_NOT_ALLOWED.getMessage());
+            return roundResult;
+        }
+
+        roundResult.setStakeApproved(isStakeAccepted(player, bet, choice));
+        if (!roundResult.isStakeApproved()) {
+            roundResult.setRoundResultMovement(HeadOrTailMessages.BET_REJECTED.getMessage());
+            return roundResult;
+        }
+
         player.setAccount(player.getAccount()
                 + (HeadOrTailMoves.valueOf(choice) == coinDrop()
                 ? Math.round(WINRATE * bet) - bet
                 : -bet));
-        roundHistory.setRoundResultTime();
-        roundHistory.setStateAfterRound(player);
-        return player;
+        roundResult.setRoundResultTime();
+        roundResult.setStateAfterRound(player);
+        roundResult.setPossibleMovies(this.possibleMovies);
+        return roundResult;
     }
 
     private HeadOrTailMoves coinDrop() {
         for (int i = 0; i < System.nanoTime() % 10; i++) {
             rnd.nextBoolean();
         }
-        roundResult = rnd.nextBoolean() ? HeadOrTailMoves.HEAD : HeadOrTailMoves.TAIL;
-        roundHistory.setRoundResultMovement(roundResult);
-        return roundResult;
+        HeadOrTailMoves roundResultMove = rnd.nextBoolean() ? HeadOrTailMoves.HEAD : HeadOrTailMoves.TAIL;
+        roundResult.setRoundResultMovement(roundResultMove.toString());
+        return roundResultMove;
     }
 
-    @Override
-    public boolean isAllowed(Player player) {return player != null && player.getAccount() > LIMIT; }
+    private boolean isAllowed(Player player) {return player != null && player.getAccount() > LIMIT; }
 
-    @Override
-    public boolean isBetAccepted(Player player, long bet, String choice) {
-        boolean isAccepted = bet > 0 && bet <= player.getAccount() && possibleMovies.contains(choice);
-        roundHistory.setStateAfterRound(player);
-        roundHistory.setRoundResultMovement(null);
-        roundHistory.setRoundResultTime();
-
-        roundHistory.setStakeApproved(isAccepted);
-        roundHistory.setStateBeforeRound(player);
-        roundHistory.setStake(bet, choice);
-        roundHistory.setStakeTime();
-        return isAccepted;
+    private boolean isStakeAccepted(Player player, long bet, String choice) {
+        return bet > 0 && bet <= player.getAccount() && possibleMovies.contains(choice);
     }
 
     @Override
@@ -72,21 +86,7 @@ public class HeadOrTail implements Game, HistoryTaker {
 
     @Override
     public Player createNewPlayer() {
+        possibleMovies = allMovies;
         return Player.createDefaultPlayer();
-    }
-
-    @Override
-    public List<String> getPossibleMoves(Player player) {
-        return player != null ? possibleMovies : new ArrayList<>();
-    }
-
-    @Override
-    public String getRoundResult() {
-        return roundResult.toString();
-    }
-
-    @Override
-    public History getHistory() {
-        return roundHistory;
     }
 }
