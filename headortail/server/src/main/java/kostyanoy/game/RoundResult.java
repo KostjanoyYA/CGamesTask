@@ -37,22 +37,21 @@ public class RoundResult implements HistoryEvent {
         this.isStakeApproved = result.isStakeApproved;
         this.roundResultTime = cloneLocalDateTime(result.roundResultTime);
         this.stakeTime = cloneLocalDateTime(result.stakeTime);
-        this.possibleMovies = (List<String>)((ArrayList)result.possibleMovies).clone();
+        if (!(result.possibleMovies instanceof ArrayList
+                && (!result.possibleMovies.isEmpty() ? result.possibleMovies.get(0) != null : true ) )) {
+            throw new ClassCastException("Possible movies List is not an ArrayList of Strings");
+        }
+        this.possibleMovies = (List<String>) ((ArrayList) result.possibleMovies).clone();
     }
-
 
     private LocalDateTime cloneLocalDateTime(LocalDateTime original) {
-       return LocalDateTime.of(
-               original.getYear(),
-               original.getMonth(),
-               original.getDayOfMonth(),
-               original.getHour(),
-               original.getMinute(),
-               original.getSecond());
-    }
-
-    private List<String> cloneStringList(List<String> original){
-        return new ArrayList<>(original);
+        return LocalDateTime.of(
+                original.getYear(),
+                original.getMonth(),
+                original.getDayOfMonth(),
+                original.getHour(),
+                original.getMinute(),
+                original.getSecond());
     }
 
     public Stake getStake() {

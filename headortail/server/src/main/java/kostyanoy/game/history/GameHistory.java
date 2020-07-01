@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class GameHistory implements History {
     private final String serverNickName;
-    private Map<String, List<HistoryEvent>> playerHistories;
+    private final Map<String, List<HistoryEvent>> playerHistories;
 
     public GameHistory(String serverNickName) {
         this.serverNickName = serverNickName;

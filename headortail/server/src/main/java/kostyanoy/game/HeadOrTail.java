@@ -1,5 +1,6 @@
 package kostyanoy.game;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -33,9 +34,9 @@ public class HeadOrTail implements Game {
     @Override
     public RoundResult changePlayerStateByGame(long bet, Player player, String choice) {
         roundResult.setStateAfterRound(player);
-        roundResult.setRoundResultMovement(null);
+        roundResult.setRoundResultMovement("");
         roundResult.setRoundResultTime();
-        roundResult.setPossibleMovies(null);
+        roundResult.setPossibleMovies(new ArrayList<>());
 
         roundResult.setStakeApproved(false);
         roundResult.setStateBeforeRound(player);
