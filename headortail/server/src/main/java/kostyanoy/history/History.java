@@ -1,4 +1,4 @@
-package kostyanoy.game.history;
+package kostyanoy.history;
 
 import java.util.List;
 

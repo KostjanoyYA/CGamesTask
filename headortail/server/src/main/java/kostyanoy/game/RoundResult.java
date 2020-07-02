@@ -1,6 +1,6 @@
 package kostyanoy.game;
 
-import kostyanoy.game.history.HistoryEvent;
+import kostyanoy.history.HistoryEvent;
 import ru.kostyanoy.entity.PlayerState;
 import ru.kostyanoy.entity.Stake;
 

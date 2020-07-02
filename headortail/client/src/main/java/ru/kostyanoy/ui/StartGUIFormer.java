@@ -35,28 +35,29 @@ public class StartGUIFormer implements VisualPresenter {
         //Buttons
         JPanel buttonPanel = new JPanel();
         frame.add(buttonPanel, BorderLayout.CENTER);
-        buttonPanel.setLayout(new BorderLayout());
+        buttonPanel.setLayout(new GridLayout(2, 1, 5, 5));
 
         JButton singlePlayerButton = new JButton("Single player");
         singlePlayerButton.setFocusable(false);
         singlePlayerButton.setFont(FONT);
         singlePlayerButton.addActionListener(e -> {
             gameMode = new SinglePlayer();
-            gameMode.playGame(client);
+            frame.setVisible(false);
             frame.dispose();
-
+            gameMode.playGame(client);
         });
-        buttonPanel.add(singlePlayerButton, BorderLayout.NORTH);
+        buttonPanel.add(singlePlayerButton);
 
         JButton stressTestButton = new JButton("Stress test");
         stressTestButton.setFocusable(false);
         stressTestButton.setFont(FONT);
         stressTestButton.addActionListener(e -> {
             gameMode = new StressTest();
-            gameMode.playGame(client);
+            frame.setVisible(false);
             frame.dispose();
+            gameMode.playGame(client);
         });
-        buttonPanel.add(singlePlayerButton, BorderLayout.SOUTH);
+        buttonPanel.add(stressTestButton);
 
         //Window
         frame.setResizable(false);
@@ -82,11 +83,10 @@ public class StartGUIFormer implements VisualPresenter {
 
     @Override
     public int askExit(String message) {
-        int userChoise = JOptionPane.showConfirmDialog(
+        return JOptionPane.showConfirmDialog(
                 frame,
                 message,
                 "Exit", JOptionPane.YES_NO_OPTION);
-        return userChoise;
     }
 
     @Override

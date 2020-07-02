@@ -3,7 +3,7 @@ package kostyanoy.entrypoint;
 import kostyanoy.dataexchange.ServerExchanger;
 import kostyanoy.game.Game;
 import kostyanoy.game.HeadOrTail;
-import kostyanoy.game.history.History;
+import kostyanoy.history.History;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

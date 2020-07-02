@@ -1,4 +1,4 @@
-package kostyanoy.game.history;
+package kostyanoy.history;
 
 public interface HistoryEvent extends Cloneable {
     HistoryEvent clone();

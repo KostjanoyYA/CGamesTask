@@ -261,6 +261,10 @@ public class ClientExchanger {
         return previousRoundResult;
     }
 
+    public String getSenderName() {
+        return senderName;
+    }
+
     private class ClientStatistics {
         private long successfulRequestCount;
         private long totalTime;

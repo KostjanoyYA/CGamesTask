@@ -136,6 +136,7 @@ public class UserGUIFormer {
         //Window
         frame.setResizable(false);
         frame.setFont(FONT);
+        log.debug("!!!!!!!!!!!!!!Before frame.pack of SingleMode gui"); //TODO Не отображает элементы окна
         frame.pack();
         frame.setVisible(true);
 
