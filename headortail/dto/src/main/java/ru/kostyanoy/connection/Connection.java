@@ -29,6 +29,14 @@ public class Connection {
         PING_ATTEMPTS_LIMIT = 12;
     }
 
+    public String getInetAddress() {
+        return socket.getInetAddress().getHostAddress(); //TODO в исходнике return null???
+    }
+
+    public int getPort() {
+        return socket.getPort();
+    }
+
     public static boolean customizeConnectionClass(String propertyFileName) {
         if (propertyFileName == null
                 || propertyFileName.isEmpty()

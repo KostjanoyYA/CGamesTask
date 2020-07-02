@@ -1,12 +1,12 @@
 package ru.kostyanoy.ui;
 
+import ru.kostyanoy.dataexchange.ClientExchanger;
+
 import javax.swing.*;
 
 public interface VisualPresenter {
-    void createMainWindow()  throws ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException;
+    void createMainWindow(ClientExchanger client)  throws ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException;
     String askServerIP();
-    String askNickName();
     void showMessage(String message);
     int askExit(String message);
-
 }

@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
-public class UserGUIFormer implements VisualPresenter {
+public class UserGUIFormer {
 
     private JFrame frame;
     private JComboBox comboBox;
@@ -26,7 +26,6 @@ public class UserGUIFormer implements VisualPresenter {
         this.exchanger = exchanger;
     }
 
-    @Override
     public void createMainWindow() throws ClassNotFoundException,
             UnsupportedLookAndFeelException,
             InstantiationException,
@@ -178,22 +177,6 @@ public class UserGUIFormer implements VisualPresenter {
 
 
     //PopUps
-    @Override
-    public String askServerIP() {
-        String userString = JOptionPane.showInputDialog(
-                frame,
-                "Enter IP Address of the Server:",
-                "Welcome to the " + name,
-                JOptionPane.QUESTION_MESSAGE);
-        if (userString == null) {
-            //frame.getWindowListeners()[0].windowClosing(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
-            System.exit(0);
-        }
-        return userString;
-
-    }
-
-    @Override
     public String askNickName() {
         String userString = JOptionPane.showInputDialog(
                 frame,
@@ -203,7 +186,6 @@ public class UserGUIFormer implements VisualPresenter {
         return userString;
     }
 
-    @Override
     public int askExit(String message) {
         int userChoise = JOptionPane.showConfirmDialog(
                 frame,
@@ -216,7 +198,6 @@ public class UserGUIFormer implements VisualPresenter {
         return userChoise;
     }
 
-    @Override
     public void showMessage(String message) {
         showMessageDialog(frame, message);
     }
