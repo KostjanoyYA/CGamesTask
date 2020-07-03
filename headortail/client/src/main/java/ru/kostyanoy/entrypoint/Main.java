@@ -16,6 +16,7 @@ public class Main {
 
         final int defaultPort = 1234;
         ClientExchanger serviceExchanger = new ClientExchanger();
+
         VisualPresenter gui = createGUI();
 
         while (!serviceExchanger.getConnection().connect(gui.askServerIP(), defaultPort)) {
@@ -27,7 +28,10 @@ public class Main {
 
         try {
             gui.createMainWindow(serviceExchanger);
-        } catch (ClassNotFoundException | UnsupportedLookAndFeelException | InstantiationException | IllegalAccessException e) {
+        } catch (ClassNotFoundException
+                | UnsupportedLookAndFeelException
+                | InstantiationException
+                | IllegalAccessException e) {
             log.warn(e.getMessage(), e);
         }
     }

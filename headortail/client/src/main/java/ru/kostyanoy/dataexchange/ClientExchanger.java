@@ -111,16 +111,17 @@ public class ClientExchanger {
     }
 
     public boolean hasCheckedNickName(String nickName) {
+        log.debug("isRemoteAnswering.get() = {}, !isSenderNameAccepted.get() = {}", isRemoteAnswering.get(), !isSenderNameAccepted.get());
         if (isRemoteAnswering.get() && !isSenderNameAccepted.get()) {
             sendMessage(new Request(nickName, MessageCategory.GREETING, 0));
         }
-        sleep(Connection.PING_TIMEOUT * 2);
+        sleep(Connection.PING_TIMEOUT);
         return isSenderNameAccepted.get();
     }
 
     public void stopExchange() {
         sendMessage(new Request(senderName, MessageCategory.GOODBYE, playerState.getTokenCount()));
-        sleep(Connection.PING_TIMEOUT * 3);
+        sleep(Connection.PING_TIMEOUT);
 
         serviceExchangeThread.interrupt();
         messageListenerThread.interrupt();

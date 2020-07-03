@@ -37,26 +37,12 @@ public class StartGUIFormer implements VisualPresenter {
         frame.add(buttonPanel, BorderLayout.CENTER);
         buttonPanel.setLayout(new GridLayout(2, 1, 5, 5));
 
-        JButton singlePlayerButton = new JButton("Single player");
-        singlePlayerButton.setFocusable(false);
-        singlePlayerButton.setFont(FONT);
-        singlePlayerButton.addActionListener(e -> {
-            gameMode = new SinglePlayer();
-            frame.setVisible(false);
-            frame.dispose();
-            gameMode.playGame(client);
-        });
+        JButton singlePlayerButton = createButton("Single player");
+        singlePlayerButton.addActionListener(e -> chooseGameMode(new SinglePlayer(), client));
         buttonPanel.add(singlePlayerButton);
 
-        JButton stressTestButton = new JButton("Stress test");
-        stressTestButton.setFocusable(false);
-        stressTestButton.setFont(FONT);
-        stressTestButton.addActionListener(e -> {
-            gameMode = new StressTest();
-            frame.setVisible(false);
-            frame.dispose();
-            gameMode.playGame(client);
-        });
+        JButton stressTestButton = createButton("Stress test");
+        stressTestButton.addActionListener(e -> chooseGameMode(new StressTest(), client));
         buttonPanel.add(stressTestButton);
 
         //Window
@@ -64,6 +50,20 @@ public class StartGUIFormer implements VisualPresenter {
         frame.setFont(FONT);
         frame.pack();
         frame.setVisible(true);
+    }
+
+    private void chooseGameMode(GameMode mode, ClientExchanger client) {
+        gameMode = mode;
+        frame.setVisible(false);
+        frame.dispose();
+        gameMode.playGame(client);
+    }
+
+    private JButton createButton(String text) {
+        JButton singlePlayerButton = new JButton(text);
+        singlePlayerButton.setFocusable(false);
+        singlePlayerButton.setFont(FONT);
+        return singlePlayerButton;
     }
 
 
@@ -81,7 +81,6 @@ public class StartGUIFormer implements VisualPresenter {
         return userString;
     }
 
-    @Override
     public int askExit(String message) {
         return JOptionPane.showConfirmDialog(
                 frame,

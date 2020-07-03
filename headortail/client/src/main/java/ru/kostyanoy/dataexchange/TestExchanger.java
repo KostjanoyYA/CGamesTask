@@ -2,11 +2,11 @@ package ru.kostyanoy.dataexchange;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.kostyanoy.connection.Connection;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -22,6 +22,7 @@ public class TestExchanger {
         this.port = baseClient.getConnection().getPort();
         this.clients = new CopyOnWriteArrayList<>();
         this.timedClients = new ConcurrentHashMap<>();
+        baseClient.stopExchange();
     }
 
     public int startTest(int clientCount, int requestInterval, int requestCount) {
@@ -41,9 +42,10 @@ public class TestExchanger {
                 continue;
             }
             clients.get(i).startExchange();
+            sleep(Connection.PING_TIMEOUT);
             timedClients.put(LocalDateTime.now(), clients.get(i));
-            if (!clients.get(i).hasCheckedNickName("Client_" + number++)) {
-                log.warn("Cannot use a name 'Client_{}' to connect", number-1);
+            while (!clients.get(i).hasCheckedNickName("Client_" + number++)) {
+                log.warn("Cannot use a name 'Client_{}' to connect", number - 1);
             }
         }
 
@@ -54,28 +56,21 @@ public class TestExchanger {
         timedClients.forEach((key, value) -> {
             Thread sender = new Thread(() -> {
                 for (int i = 0; i < requestCount; i++) {
-                    value.sendStake(getRandomBet(value), getRandomChoice(value));
-                    try {
-                        Thread.sleep(requestInterval);
-                    } catch (InterruptedException e) {
-                        log.warn(e.getMessage(), e);
-                    }
+                    value.sendStake(getRandomBet(value.getPlayerState().getTokenCount()), getRandomChoice(value));
+                    sleep(requestInterval);
                 }
                 value.stopExchange();
             });
             sender.setName(value.getSenderName());
             sender.start();
         });
+        //TODO Сделать выгрузку истории запросов
         return 1;
     }
 
 
-    private int getRandomBet(ClientExchanger client) {
-        Random rndBet = new Random(client.getPlayerState().getTokenCount() >> 1);
-        for (int i = 0; i < System.nanoTime() % 10; i++) {
-            rndBet.nextInt();
-        }
-        return Math.abs(rndBet.nextInt());
+    private int getRandomBet(long max) {
+        return (int) (Math.random() * (Math.abs(max+2)));
     }
 
     private String getRandomChoice(ClientExchanger client) {
@@ -89,13 +84,20 @@ public class TestExchanger {
         if (max == 1) {
             return client.getPossibleOptions()[0];
         }
-
         return client.getPossibleOptions()[(int) (Math.random() * max)];
     }
 
     public void stopTest() {
         if (clients != null && !clients.isEmpty()) {
             clients.forEach(ClientExchanger::stopExchange);
+        }
+    }
+
+    private void sleep(int timeout) {
+        try {
+            Thread.sleep(Math.abs(timeout));
+        } catch (InterruptedException e) {
+            log.warn(e.getMessage(), e);
         }
     }
 }

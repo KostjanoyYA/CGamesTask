@@ -84,12 +84,12 @@ public class TestGUIFormer {
         inputPanel.add(clientCountField);
 
         JTextField requestIntervalField = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
-        requestIntervalField.setText("1");
+        requestIntervalField.setText("1000");
         requestIntervalField.setFont(FONT);
         inputPanel.add(requestIntervalField);
 
         JTextField requestCountField = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
-        requestCountField.setText("1");
+        requestCountField.setText("5");
         requestCountField.setFont(FONT);
         inputPanel.add(requestCountField);
 
@@ -123,11 +123,15 @@ public class TestGUIFormer {
         startTestButton.setFont(FONT);
 
         AtomicInteger testHasDone = new AtomicInteger(0);
-        startTestButton.addActionListener(e -> testHasDone.set(exchanger.startTest(
-                Integer.parseInt(clientCountField.getText()),
-                Integer.parseInt(requestIntervalField.getText()),
-                Integer.parseInt(requestCount.getText()))));
-        startTestButton.setEnabled(false);
+        startTestButton.addActionListener(e -> {
+            if (startTestButton.isEnabled()) {
+                startTestButton.setEnabled(false);
+                testHasDone.set(exchanger.startTest(
+                        Integer.parseInt(clientCountField.getText()),
+                        Integer.parseInt(requestIntervalField.getText()),
+                        Integer.parseInt(requestCountField.getText())));
+            }
+        });
         buttonPanel.add(startTestButton, BorderLayout.CENTER);
 
         //Window
@@ -136,7 +140,7 @@ public class TestGUIFormer {
         frame.pack();
         frame.setVisible(true);
 
-        while (!(testHasDone.get() == 0)){
+        while (!(testHasDone.get() == 0)) {
             try {
                 Thread.sleep(3000);
             } catch (InterruptedException e) {

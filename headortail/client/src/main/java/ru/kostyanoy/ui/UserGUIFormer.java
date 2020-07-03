@@ -1,38 +1,42 @@
 package ru.kostyanoy.ui;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.kostyanoy.dataexchange.ClientExchanger;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.Arrays;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
 public class UserGUIFormer {
 
     private JFrame frame;
-    private JComboBox comboBox;
-    private final String name = "Heads and tails client";
     private final ClientExchanger exchanger;
-    private static final int REFRESH_TIMEOUT = 1000;
+    private JLabel accountLabel;
+    private JLabel roundResultValue;
+    private JComboBox comboBox;
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
-    private static final Logger log = LoggerFactory.getLogger(UserGUIFormer.class);
 
     public UserGUIFormer(ClientExchanger exchanger) {
         this.exchanger = exchanger;
     }
 
-    public void createMainWindow() throws ClassNotFoundException,
-            UnsupportedLookAndFeelException,
-            InstantiationException,
-            IllegalAccessException {
-        javax.swing.UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+    public JLabel getAccountLabel() {
+        return accountLabel;
+    }
 
-        frame = new JFrame(name);
+    public JLabel getRoundResultValue() {
+        return roundResultValue;
+    }
+
+    public JComboBox getComboBox() {
+        return comboBox;
+    }
+
+    public void createMainWindow() {
+
+        frame = new JFrame("Heads and tails client");
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.setMinimumSize(new Dimension(320, 240));
         frame.setLocationByPlatform(true);
@@ -59,22 +63,11 @@ public class UserGUIFormer {
                 if (rc == 0) {
                     event.getWindow().setVisible(false);
                     exchanger.stopExchange();
+                    event.getWindow().dispose();
                     System.exit(0);
                 }
             }
         });
-
-        //Menu
-        JMenuItem exitItem = new JMenuItem("Exit");
-        exitItem.addActionListener(e -> frame.getWindowListeners()[0].windowClosing(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING)));
-
-        JMenu jMenu = new JMenu("File");
-        jMenu.add(exitItem);
-
-        JMenuBar jMenuBar = new JMenuBar();
-        jMenuBar.add(jMenu);
-
-        frame.setJMenuBar(jMenuBar);
 
         //Right panel
         JPanel inputPanel = new JPanel();
@@ -86,16 +79,15 @@ public class UserGUIFormer {
         betField.setFont(FONT);
         inputPanel.add(betField);
 
-        String[] items = exchanger.getPossibleOptions();
-        comboBox = new JComboBox(items);
+        comboBox = new JComboBox(exchanger.getPossibleOptions());
         inputPanel.add(comboBox);
 
-        JLabel roundResultValue = new JLabel(exchanger.getPreviousRoundResult());
+        roundResultValue = new JLabel(exchanger.getPreviousRoundResult());
         roundResultValue.setFont(FONT);
         inputPanel.add(roundResultValue);
 
 
-        JLabel accountLabel = new JLabel("0");
+        accountLabel = new JLabel("0");
         accountLabel.setFont(FONT);
         inputPanel.add(accountLabel);
 
@@ -136,55 +128,17 @@ public class UserGUIFormer {
         //Window
         frame.setResizable(false);
         frame.setFont(FONT);
-        log.debug("!!!!!!!!!!!!!!Before frame.pack of SingleMode gui"); //TODO Не отображает элементы окна
         frame.pack();
         frame.setVisible(true);
-
-        while (!Thread.interrupted()) {
-            accountLabel.setText(String.valueOf(exchanger.getPlayerState().getTokenCount()));
-            refreshComboBox();
-            roundResultValue.setText(exchanger.getPreviousRoundResult());
-            try {
-                Thread.sleep(REFRESH_TIMEOUT);
-            } catch (InterruptedException e) {
-                log.warn(e.getMessage(), e);
-                break;
-            }
-        }
     }
-
-    private void refreshComboBox() {
-        int itemCount = comboBox.getItemCount();
-        for (int i = itemCount - 1; i >= 0; i--) {
-            if (!Arrays.asList(exchanger.getPossibleOptions()).contains(comboBox.getItemAt(i))) {
-                comboBox.remove(i);
-            }
-        }
-
-        boolean hasFound = false;
-        for (int i = 0; i < exchanger.getPossibleOptions().length; i++) {
-            for (int j = 0; j < comboBox.getItemCount(); j++) {
-                if (comboBox.getItemAt(j).equals(exchanger.getPossibleOptions()[i])) {
-                    hasFound = true;
-                    break;
-                }
-            }
-            if (!hasFound) {
-                comboBox.addItem(exchanger.getPossibleOptions()[i]);
-            }
-            hasFound = false;
-        }
-    }
-
 
     //PopUps
     public String askNickName() {
-        String userString = JOptionPane.showInputDialog(
+        return JOptionPane.showInputDialog(
                 frame,
                 "Enter your Nickname:",
                 "Game nickname",
                 JOptionPane.QUESTION_MESSAGE);
-        return userString;
     }
 
     public int askExit(String message) {
