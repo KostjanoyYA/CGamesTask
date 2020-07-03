@@ -86,31 +86,18 @@ public class UserGUIFormer {
         roundResultValue.setFont(FONT);
         inputPanel.add(roundResultValue);
 
-
-        accountLabel = new JLabel("0");
-        accountLabel.setFont(FONT);
-        inputPanel.add(accountLabel);
+        accountLabel = createLabelOnPanel("0", inputPanel);
 
         //Left panel
         JPanel labelPanel = new JPanel();
         frame.add(labelPanel, BorderLayout.WEST);
         labelPanel.setLayout(new GridLayout(4, 1, 5, 5));
 
-        JLabel betLabel = new JLabel("Enter your bet here:");
-        betLabel.setFont(FONT);
-        labelPanel.add(betLabel);
 
-        JLabel yourChoice = new JLabel("Your choice:");
-        yourChoice.setFont(FONT);
-        labelPanel.add(yourChoice);
-
-        JLabel roundResult = new JLabel("Previous round result:");
-        roundResult.setFont(FONT);
-        labelPanel.add(roundResult);
-
-        JLabel yourAccount = new JLabel("Your account:");
-        yourAccount.setFont(FONT);
-        labelPanel.add(yourAccount);
+        createLabelOnPanel("Enter your bet here:", labelPanel);
+        createLabelOnPanel("Your choice:", labelPanel);
+        createLabelOnPanel("Previous round result:", labelPanel);
+        createLabelOnPanel("Your account:", labelPanel);
 
         //Button panel
         JPanel buttonPanel = new JPanel();
@@ -130,6 +117,13 @@ public class UserGUIFormer {
         frame.setFont(FONT);
         frame.pack();
         frame.setVisible(true);
+    }
+
+    private JLabel createLabelOnPanel(String text, JPanel panel) {
+        JLabel label = new JLabel(text);
+        label.setFont(FONT);
+        panel.add(label);
+        return label;
     }
 
     //PopUps

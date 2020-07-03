@@ -1,7 +1,5 @@
 package ru.kostyanoy.ui;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.kostyanoy.dataexchange.ClientExchanger;
 import ru.kostyanoy.mode.GameMode;
 import ru.kostyanoy.mode.SinglePlayer;
@@ -17,8 +15,7 @@ public class StartGUIFormer implements VisualPresenter {
     private JFrame frame;
     private final String name = "Choose 'Heads or tails' client";
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
-    GameMode gameMode;
-    private static final Logger log = LoggerFactory.getLogger(StartGUIFormer.class);
+    private GameMode gameMode;
 
     @Override
     public void createMainWindow(ClientExchanger client) throws ClassNotFoundException,
@@ -79,13 +76,6 @@ public class StartGUIFormer implements VisualPresenter {
             System.exit(0);
         }
         return userString;
-    }
-
-    public int askExit(String message) {
-        return JOptionPane.showConfirmDialog(
-                frame,
-                message,
-                "Exit", JOptionPane.YES_NO_OPTION);
     }
 
     @Override

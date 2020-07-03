@@ -1,23 +1,17 @@
 package ru.kostyanoy.ui;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.kostyanoy.dataexchange.TestExchanger;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestGUIFormer {
 
     private JFrame frame;
-    private final String name = "Heads and tails Test client";
-    private TestExchanger exchanger;
-    private static final int REFRESH_TIMEOUT = 1000;
+    private final TestExchanger exchanger;
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
-    private static final Logger log = LoggerFactory.getLogger(TestGUIFormer.class);
 
     public TestGUIFormer(TestExchanger exchanger) {
         this.exchanger = exchanger;
@@ -29,7 +23,7 @@ public class TestGUIFormer {
             IllegalAccessException {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
-        frame = new JFrame(name);
+        frame = new JFrame("Heads and tails Test client");
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.setMinimumSize(new Dimension(320, 240));
         frame.setLocationByPlatform(true);
@@ -78,39 +72,18 @@ public class TestGUIFormer {
         frame.add(inputPanel, BorderLayout.EAST);
         inputPanel.setLayout(new GridLayout(3, 1, 5, 5));
 
-        JTextField clientCountField = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
-        clientCountField.setText("1");
-        clientCountField.setFont(FONT);
-        inputPanel.add(clientCountField);
-
-        JTextField requestIntervalField = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
-        requestIntervalField.setText("1000");
-        requestIntervalField.setFont(FONT);
-        inputPanel.add(requestIntervalField);
-
-        JTextField requestCountField = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
-        requestCountField.setText("5");
-        requestCountField.setFont(FONT);
-        inputPanel.add(requestCountField);
-
+        JTextField clientCountField = createFieldOnPanel("1", inputPanel);
+        JTextField requestIntervalField = createFieldOnPanel("1000", inputPanel);
+        JTextField requestCountField = createFieldOnPanel("5", inputPanel);
 
         //Left panel
         JPanel labelPanel = new JPanel();
         frame.add(labelPanel, BorderLayout.WEST);
         labelPanel.setLayout(new GridLayout(3, 1, 5, 5));
 
-        JLabel clientCountLabel = new JLabel("Client count:");
-        clientCountLabel.setFont(FONT);
-        labelPanel.add(clientCountLabel);
-
-        JLabel requestIntervalLabel = new JLabel("Request interval (ms):");
-        requestIntervalLabel.setFont(FONT);
-        labelPanel.add(requestIntervalLabel);
-
-        JLabel requestCount = new JLabel("Request count:");
-        requestCount.setFont(FONT);
-        labelPanel.add(requestCount);
-
+        createLabelOnPanel("Client count:", labelPanel);
+        createLabelOnPanel("Request interval (ms):", labelPanel);
+        createLabelOnPanel("Request count:", labelPanel);
 
         //Button panel
         JPanel buttonPanel = new JPanel();
@@ -122,14 +95,13 @@ public class TestGUIFormer {
         startTestButton.setFocusable(false);
         startTestButton.setFont(FONT);
 
-        AtomicInteger testHasDone = new AtomicInteger(0);
         startTestButton.addActionListener(e -> {
             if (startTestButton.isEnabled()) {
                 startTestButton.setEnabled(false);
-                testHasDone.set(exchanger.startTest(
+                exchanger.startTest(
                         Integer.parseInt(clientCountField.getText()),
                         Integer.parseInt(requestIntervalField.getText()),
-                        Integer.parseInt(requestCountField.getText())));
+                        Integer.parseInt(requestCountField.getText()));
             }
         });
         buttonPanel.add(startTestButton, BorderLayout.CENTER);
@@ -139,14 +111,19 @@ public class TestGUIFormer {
         frame.setFont(FONT);
         frame.pack();
         frame.setVisible(true);
+    }
 
-        while (!(testHasDone.get() == 0)) {
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                log.warn(e.getMessage(), e);
-            }
-            startTestButton.setEnabled(true);
-        }
+    private void createLabelOnPanel(String text, JPanel panel) {
+        JLabel label = new JLabel(text);
+        label.setFont(FONT);
+        panel.add(label);
+    }
+
+    private JTextField createFieldOnPanel(String text, JPanel panel) {
+        JTextField field = new JTextField(String.valueOf(Integer.MAX_VALUE).length());
+        field.setText(text);
+        field.setFont(FONT);
+        panel.add(field);
+        return field;
     }
 }
