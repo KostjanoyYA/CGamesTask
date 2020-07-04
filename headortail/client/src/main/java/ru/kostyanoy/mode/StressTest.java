@@ -36,19 +36,18 @@ public class StressTest implements GameMode {
         exchanger.stopExchange();
     }
 
-    public void startTest(int clientCount, int requestInterval, int requestCount) {
+    public void startTest(JButton startTestButton, int clientCount, int requestInterval, int requestCount) {
         StatisticsGUIFormer tableGui = new StatisticsGUIFormer();
+
+        Thread buttonStateChanger = new Thread(() -> SwingUtilities.invokeLater(() -> { //TODO обновление статуса при нажатии кнопки
+            startTestButton.setEnabled(false);
+            startTestButton.setText("Test is in the progress...");
+        }));
+        buttonStateChanger.setDaemon(true);
+        buttonStateChanger.start();
+
         exchanger.startExchange(clientCount, requestInterval, requestCount)
-                .ifPresentOrElse(table -> tableGui.createTableFrame(table),
-                () -> tableGui.showMessage("Statistics is empty"));;
+                .ifPresentOrElse(tableGui::createTableFrame,
+                        () -> tableGui.showMessage("Statistics is empty"));
     }
 }
-
-
-//TODO
-//exchanger.startExchange(
-//        Integer.parseInt(clientCountField.getText()),
-//        Integer.parseInt(requestIntervalField.getText()),
-//        Integer.parseInt(requestCountField.getText()))
-//        .ifPresentOrElse(table -> createTableFrame(table),
-//        () -> showMessageDialog(frame, "Statistics is empty"));

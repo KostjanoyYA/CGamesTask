@@ -27,7 +27,6 @@ public class StartGUIFormer implements VisualPresenter {
         frame = new JFrame(name);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setMinimumSize(new Dimension(320, 240));
-        frame.setLocationByPlatform(true);
 
         //Buttons
         JPanel buttonPanel = new JPanel();
@@ -46,6 +45,7 @@ public class StartGUIFormer implements VisualPresenter {
         frame.setResizable(false);
         frame.setFont(FONT);
         frame.pack();
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 

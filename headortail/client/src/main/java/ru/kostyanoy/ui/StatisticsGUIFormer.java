@@ -23,7 +23,7 @@ public class StatisticsGUIFormer {
         frame = new JFrame("Heads and Tails Test Statistics");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        Object[] columnsHeader = new String[]{"Пользователь", "Успешные запросы", "Неуспешные запросы", "Среднее время запроса"};
+        Object[] columnsHeader = new String[]{"Пользователь", "Успешные запросы", "Неуспешные запросы", "Среднее время запроса, мс"};
         Object[][] cellTexts = new String[statistics.size()][columnsHeader.length];
 
         log.debug("statistics = {}", statistics.toString());
@@ -32,9 +32,9 @@ public class StatisticsGUIFormer {
 
         for (ClientExchanger.ClientStatistics element : statistics) {
             cellTexts[rowNumber][0] = element.getUsername();
-            cellTexts[rowNumber][1] = element.getSuccessfulRequestCount();
-            cellTexts[rowNumber][2] = element.getExpiredRequests();
-            cellTexts[rowNumber][3] = element.getAverageRequestTime();
+            cellTexts[rowNumber][1] = String.valueOf(element.getSuccessfulRequestCount());
+            cellTexts[rowNumber][2] = String.valueOf(element.getExpiredRequests());
+            cellTexts[rowNumber][3] = String.valueOf(element.getAverageRequestTime());
             rowNumber++;
         }
         log.debug("cellTexts = {}", Arrays.deepToString(cellTexts));
@@ -59,6 +59,7 @@ public class StatisticsGUIFormer {
         frame.setResizable(true);
         frame.setFont(FONT);
         frame.pack();
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 

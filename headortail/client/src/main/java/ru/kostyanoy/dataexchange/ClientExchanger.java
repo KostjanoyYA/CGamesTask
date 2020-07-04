@@ -274,8 +274,9 @@ public class ClientExchanger {
 
         private void addSuccessfulRequestsByResponse(Response response) {
             successfulRequestCount++;
-            totalTime += Duration.between(LocalDateTime.now(), sentRequestMap.get(response.getMessageID()).getSendTime())
-                    .toMillis();
+            totalTime += Math.abs(
+                    Duration.between(LocalDateTime.now(), sentRequestMap.get(response.getMessageID()).getSendTime())
+                    .toMillis());
         }
 
         public long getSuccessfulRequestCount() {

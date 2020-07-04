@@ -65,12 +65,15 @@ public class TestExchanger {
                 sleep(Connection.PING_TIMEOUT);
                 value.stopExchange();
 
-                log.debug("value.getStatistics() = {}", value.getStatistics().get());
-                value.getStatistics().ifPresent(event -> statistics.add(event));
-                log.debug("statistics added event {}", value.getStatistics().get());
+                value.getStatistics().ifPresent(statistics::add);
             });
             sender.setName(value.getSenderName());
             sender.start();
+            try {
+                sender.join();
+            } catch (InterruptedException e) {
+                log.warn(e.getMessage(), e);
+            }
         });
         return Optional.of(statistics);
     }

@@ -26,7 +26,6 @@ public class TestGUIFormer {
         frame = new JFrame("Heads and Tails Test Client");
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.setMinimumSize(new Dimension(320, 240));
-        frame.setLocationByPlatform(true);
         frame.addWindowListener(new WindowListener() {
             public void windowActivated(WindowEvent event) {}
 
@@ -98,8 +97,8 @@ public class TestGUIFormer {
         startTestButton.addActionListener(e -> {
             if (startTestButton.isEnabled()) {
                 startTestButton.setEnabled(false);
-
-                stressTest.startTest(
+                startTestButton.setText("Test is in the progress...");
+                stressTest.startTest(startTestButton,
                         Integer.parseInt(clientCountField.getText()),
                         Integer.parseInt(requestIntervalField.getText()),
                         Integer.parseInt(requestCountField.getText()));
@@ -111,6 +110,7 @@ public class TestGUIFormer {
         frame.setResizable(false);
         frame.setFont(FONT);
         frame.pack();
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
