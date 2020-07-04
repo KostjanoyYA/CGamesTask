@@ -7,6 +7,7 @@ import ru.kostyanoy.connection.Connection;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -15,6 +16,7 @@ public class TestExchanger {
     private final Map<LocalDateTime, ClientExchanger> timedClients;
     private final String inetAddress;
     private final int port;
+    private final List<ClientExchanger.ClientStatistics> statistics;
     private static final Logger log = LoggerFactory.getLogger(TestExchanger.class);
 
     public TestExchanger(ClientExchanger baseClient) {
@@ -22,10 +24,11 @@ public class TestExchanger {
         this.port = baseClient.getConnection().getPort();
         this.clients = new CopyOnWriteArrayList<>();
         this.timedClients = new ConcurrentHashMap<>();
+        this.statistics = new CopyOnWriteArrayList<>();
         baseClient.stopExchange();
     }
 
-    public int startTest(int clientCount, int requestInterval, int requestCount) {
+    public Optional<List<ClientExchanger.ClientStatistics>> startExchange(int clientCount, int requestInterval, int requestCount) {
         if (clientCount <= 0 || requestInterval <= 0 || requestCount <= 0) {
             throw new IllegalArgumentException("Arguments must be more than 0");
         }
@@ -50,7 +53,7 @@ public class TestExchanger {
         }
 
         if (clients.isEmpty()) {
-            return -1;
+            return Optional.empty();
         }
 
         timedClients.forEach((key, value) -> {
@@ -59,15 +62,18 @@ public class TestExchanger {
                     value.sendStake(getRandomBet(value.getPlayerState().getTokenCount()), getRandomChoice(value));
                     sleep(requestInterval);
                 }
+                sleep(Connection.PING_TIMEOUT);
                 value.stopExchange();
+
+                log.debug("value.getStatistics() = {}", value.getStatistics().get());
+                value.getStatistics().ifPresent(event -> statistics.add(event));
+                log.debug("statistics added event {}", value.getStatistics().get());
             });
             sender.setName(value.getSenderName());
             sender.start();
         });
-        //TODO Сделать выгрузку истории запросов
-        return 1;
+        return Optional.of(statistics);
     }
-
 
     private int getRandomBet(long max) {
         return (int) (Math.random() * (Math.abs(max+2)));
@@ -87,7 +93,7 @@ public class TestExchanger {
         return client.getPossibleOptions()[(int) (Math.random() * max)];
     }
 
-    public void stopTest() {
+    public void stopExchange() {
         if (clients != null && !clients.isEmpty()) {
             clients.forEach(ClientExchanger::stopExchange);
         }

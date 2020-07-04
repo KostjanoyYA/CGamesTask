@@ -1,6 +1,6 @@
 package ru.kostyanoy.ui;
 
-import ru.kostyanoy.dataexchange.TestExchanger;
+import ru.kostyanoy.mode.StressTest;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,11 +10,11 @@ import java.awt.event.WindowListener;
 public class TestGUIFormer {
 
     private JFrame frame;
-    private final TestExchanger exchanger;
+    private final StressTest stressTest;
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
 
-    public TestGUIFormer(TestExchanger exchanger) {
-        this.exchanger = exchanger;
+    public TestGUIFormer(StressTest stressTest) {
+        this.stressTest = stressTest;
     }
 
     public void createMainWindow() throws ClassNotFoundException,
@@ -23,7 +23,7 @@ public class TestGUIFormer {
             IllegalAccessException {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
-        frame = new JFrame("Heads and tails Test client");
+        frame = new JFrame("Heads and Tails Test Client");
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.setMinimumSize(new Dimension(320, 240));
         frame.setLocationByPlatform(true);
@@ -49,7 +49,7 @@ public class TestGUIFormer {
                         null, options, options[0]);
                 if (rc == 0) {
                     event.getWindow().setVisible(false);
-                    exchanger.stopTest();
+                    stressTest.stopTest();
                     System.exit(0);
                 }
             }
@@ -98,7 +98,8 @@ public class TestGUIFormer {
         startTestButton.addActionListener(e -> {
             if (startTestButton.isEnabled()) {
                 startTestButton.setEnabled(false);
-                exchanger.startTest(
+
+                stressTest.startTest(
                         Integer.parseInt(clientCountField.getText()),
                         Integer.parseInt(requestIntervalField.getText()),
                         Integer.parseInt(requestCountField.getText()));

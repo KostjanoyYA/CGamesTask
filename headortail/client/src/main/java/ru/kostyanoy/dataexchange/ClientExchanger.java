@@ -10,6 +10,8 @@ import ru.kostyanoy.entity.PlayerState;
 import timer.TimeMeter;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -228,6 +230,7 @@ public class ClientExchanger {
                             response.getCategory(),
                             response.getMessageText());
                 }
+                internalStatistics.addSuccessfulRequestsByResponse(response);
             }
             case GOODBYE -> {
                 isRemoteAnswering.set(false);
@@ -244,7 +247,6 @@ public class ClientExchanger {
             default -> log.warn("{} sent unexpected response category: {}", response.getSenderName(), response);
         }
 
-        internalStatistics.addSuccessfulRequestsByResponse(response);
         sentRequestMap.remove(response.getMessageID());
     }
 
@@ -266,14 +268,14 @@ public class ClientExchanger {
         return senderName;
     }
 
-    private class ClientStatistics {
+    public class ClientStatistics {
         private long successfulRequestCount;
         private long totalTime;
 
         private void addSuccessfulRequestsByResponse(Response response) {
-            this.successfulRequestCount++;
-            totalTime += System.currentTimeMillis()
-                    - response.getSendTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            successfulRequestCount++;
+            totalTime += Duration.between(LocalDateTime.now(), sentRequestMap.get(response.getMessageID()).getSendTime())
+                    .toMillis();
         }
 
         public long getSuccessfulRequestCount() {
