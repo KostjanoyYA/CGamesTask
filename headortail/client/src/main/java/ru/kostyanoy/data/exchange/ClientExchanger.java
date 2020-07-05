@@ -1,4 +1,4 @@
-package ru.kostyanoy.dataexchange;
+package ru.kostyanoy.data.exchange;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +37,10 @@ public class ClientExchanger {
     private String previousRoundResult;
 
     private String[] possibleOptions;
+    private static final long REQUEST_DELAY_MILLS = Connection.PING_TIMEOUT * 5;
+    private static final long RESPONSE_DELAY_MILLS = Connection.PING_TIMEOUT * 10;
+    private static final int WAIT_FOR_ANSWER_TIMEOUT_MILLS = Connection.PING_TIMEOUT;
+    private static final int INPUT_PORT_READER_TIMEOUT_MILLS = Connection.PING_TIMEOUT >> 2;
 
     private static final Logger log = LoggerFactory.getLogger(ClientExchanger.class);
 
@@ -48,8 +52,8 @@ public class ClientExchanger {
         isRemoteAnswering = new AtomicBoolean(false);
         isSenderNameAccepted = new AtomicBoolean(false);
         this.connection = new Connection();
-        requestDelayTimer = new TimeMeter(Connection.PING_TIMEOUT * 5000);
-        responseDelay = Connection.PING_TIMEOUT * 10;
+        requestDelayTimer = new TimeMeter(REQUEST_DELAY_MILLS * 1000);
+        responseDelay = RESPONSE_DELAY_MILLS;
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         sentRequestMap = new ConcurrentHashMap<>();
         expiredRequestMap = new ConcurrentHashMap<>();
@@ -113,17 +117,16 @@ public class ClientExchanger {
     }
 
     public boolean hasCheckedNickName(String nickName) {
-        log.debug("isRemoteAnswering.get() = {}, !isSenderNameAccepted.get() = {}", isRemoteAnswering.get(), !isSenderNameAccepted.get());
         if (isRemoteAnswering.get() && !isSenderNameAccepted.get()) {
             sendMessage(new Request(nickName, MessageCategory.GREETING, 0));
         }
-        sleep(Connection.PING_TIMEOUT);
+        sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS);
         return isSenderNameAccepted.get();
     }
 
     public void stopExchange() {
         sendMessage(new Request(senderName, MessageCategory.GOODBYE, playerState.getTokenCount()));
-        sleep(Connection.PING_TIMEOUT);
+        sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS);
 
         serviceExchangeThread.interrupt();
         messageListenerThread.interrupt();
@@ -145,7 +148,7 @@ public class ClientExchanger {
 
             sendMessage(new Request(senderName, MessageCategory.SERVICE, playerState.getTokenCount()));
 
-            sleep(Connection.PING_TIMEOUT*2);
+            sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS);
 
             sentRequestMap.forEach((key, value) -> {
                 if ((System.currentTimeMillis()
@@ -170,7 +173,7 @@ public class ClientExchanger {
 
     private void parseMessage() throws IOException {
         while (!connection.getReader().ready()) {
-            sleep(Connection.PING_TIMEOUT >> 2);
+            sleep(INPUT_PORT_READER_TIMEOUT_MILLS);
         }
 
         String jsonMessage = connection.getReader().readLine();
@@ -179,7 +182,6 @@ public class ClientExchanger {
         if (incomingMessage == null) {
             return;
         }
-
         log.info("Have got {}", incomingMessage);
 
         if (incomingMessage instanceof Request) {
@@ -210,20 +212,16 @@ public class ClientExchanger {
 
         switch (response.getCategory()) {
             case GREETING -> {
-                senderName = (response.getStatus() == Status.ACCEPTED)
-                        ? sentRequestMap.get(response.getMessageID()).getSenderName()
-                        : null;
-                isSenderNameAccepted.set(senderName != null);
+                setNameByResponse(response);
                 setPlayerState(response);
-                possibleOptions = (response.getPossibleOptions() != null)
-                        ? response.getPossibleOptions().toArray(new String[0])
-                        : new String[0];
+                setPossibleOptions(response);
             }
 
             case STAKE -> {
                 previousRoundResult = response.getMessageText();
                 if (response.getStatus() == Status.ACCEPTED) {
                     setPlayerState(response);
+                    setPossibleOptions(response);
                 } else {
                     log.info("{} rejected {}, message: {}",
                             response.getSenderName(),
@@ -239,9 +237,7 @@ public class ClientExchanger {
             }
             case SERVICE -> {
                 setPlayerState(response);
-                possibleOptions = (response.getPossibleOptions() != null)
-                        ? response.getPossibleOptions().toArray(new String[0])
-                        : new String[0];
+                setPossibleOptions(response);
             }
 
             default -> log.warn("{} sent unexpected response category: {}", response.getSenderName(), response);
@@ -250,10 +246,23 @@ public class ClientExchanger {
         sentRequestMap.remove(response.getMessageID());
     }
 
+    private void setNameByResponse(Response response) {
+        senderName = (response.getStatus() == Status.ACCEPTED)
+                ? sentRequestMap.get(response.getMessageID()).getSenderName()
+                : null;
+        isSenderNameAccepted.set(senderName != null);
+    }
+
     private void setPlayerState(Response response) {
         playerState.setTokenCount(isSenderNameAccepted.get()
                 ? response.getTokens()
                 : playerState.getTokenCount());
+    }
+
+    private void setPossibleOptions(Response response) {
+        possibleOptions = (response.getPossibleOptions() != null)
+                ? response.getPossibleOptions().toArray(new String[0])
+                : new String[0];
     }
 
     public String[] getPossibleOptions() {
@@ -276,7 +285,7 @@ public class ClientExchanger {
             successfulRequestCount++;
             totalTime += Math.abs(
                     Duration.between(LocalDateTime.now(), sentRequestMap.get(response.getMessageID()).getSendTime())
-                    .toMillis());
+                            .toMillis());
         }
 
         public long getSuccessfulRequestCount() {

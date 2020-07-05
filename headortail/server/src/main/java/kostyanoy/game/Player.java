@@ -18,7 +18,7 @@ public class Player {
         }
         else {
             log.info("Property file '{}' has been loaded successfully", propertyFileName);
-            defaultAccount = Long.parseLong(PropertyLoader.getPropertiesMap().get("tokens"));
+            defaultAccount = Long.parseLong(PropertyLoader.getPropertyMap().get("tokens"));
         }
         return true;
     }

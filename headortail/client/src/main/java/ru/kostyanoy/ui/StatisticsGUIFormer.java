@@ -2,7 +2,7 @@ package ru.kostyanoy.ui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.kostyanoy.dataexchange.ClientExchanger;
+import ru.kostyanoy.data.exchange.ClientExchanger;
 
 import javax.swing.*;
 import java.awt.*;
@@ -64,6 +64,6 @@ public class StatisticsGUIFormer {
     }
 
     public void showMessage(String text) {
-        showMessageDialog(frame, "Statistics is empty");
+        showMessageDialog(frame, text);
     }
 }

@@ -1,6 +1,6 @@
 package ru.kostyanoy.ui;
 
-import ru.kostyanoy.dataexchange.ClientExchanger;
+import ru.kostyanoy.data.exchange.ClientExchanger;
 import ru.kostyanoy.mode.GameMode;
 import ru.kostyanoy.mode.SinglePlayer;
 import ru.kostyanoy.mode.StressTest;
@@ -10,14 +10,13 @@ import java.awt.*;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
-public class StartGUIFormer implements VisualPresenter {
+public class StartGUIFormer {
 
     private JFrame frame;
     private final String name = "Choose 'Heads or tails' client";
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
     private GameMode gameMode;
 
-    @Override
     public void createMainWindow(ClientExchanger client) throws ClassNotFoundException,
             UnsupportedLookAndFeelException,
             InstantiationException,
@@ -65,7 +64,6 @@ public class StartGUIFormer implements VisualPresenter {
 
 
     //PopUps
-    @Override
     public String askServerIP() {
         String userString = JOptionPane.showInputDialog(
                 frame,
@@ -78,7 +76,6 @@ public class StartGUIFormer implements VisualPresenter {
         return userString;
     }
 
-    @Override
     public void showMessage(String message) {
         showMessageDialog(frame, message);
     }

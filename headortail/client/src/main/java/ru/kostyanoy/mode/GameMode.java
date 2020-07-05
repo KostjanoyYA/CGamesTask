@@ -1,7 +1,7 @@
 package ru.kostyanoy.mode;
 
-import ru.kostyanoy.dataexchange.ClientExchanger;
+import ru.kostyanoy.data.exchange.ClientExchanger;
 
 public interface GameMode {
-    int playGame(ClientExchanger client);
+    void playGame(ClientExchanger client);
 }

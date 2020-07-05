@@ -1,4 +1,4 @@
-package kostyanoy.dataexchange;
+package kostyanoy.data.exchange;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,6 +30,7 @@ public class ServerExchanger implements HistoryTaker {
     private final Game game;
 
     private History gameHistory;
+    private static final int INPUT_PORT_READER_TIMEOUT_MILLS = Connection.PING_TIMEOUT >> 2;
     private static final Logger log = LoggerFactory.getLogger(ServerExchanger.class);
 
     private Thread messageListenerThread;
@@ -47,8 +48,8 @@ public class ServerExchanger implements HistoryTaker {
             throw new IllegalArgumentException("Cannot load property file");
         } else {
             log.info("Property file '{}' has been loaded successfully", propertyFileName);
-            senderName = PropertyLoader.getPropertiesMap().get("server.nickname");
-            serverPort = Integer.parseInt(PropertyLoader.getPropertiesMap().get("server.port"));
+            senderName = PropertyLoader.getPropertyMap().get("server.nickname");
+            serverPort = Integer.parseInt(PropertyLoader.getPropertyMap().get("server.port"));
         }
         this.gameHistory = new GameHistory(senderName);
     }
@@ -119,7 +120,7 @@ public class ServerExchanger implements HistoryTaker {
                 while (!Thread.interrupted()) {
                     unnamedClients.add(new Client(new Connection().connect(serverSocket.accept())));
                     log.info("Added new client (temp id {})", unnamedClients.get(unnamedClients.size() - 1).hashCode());
-                    Thread.sleep(Connection.PING_TIMEOUT >> 2);
+                    Thread.sleep(INPUT_PORT_READER_TIMEOUT_MILLS);
                 }
             } catch (InterruptedException | IOException e) {
                 log.warn(e.getMessage(), e);
@@ -158,7 +159,7 @@ public class ServerExchanger implements HistoryTaker {
                     }
                 });
 
-                sleep(Connection.PING_TIMEOUT >> 1);
+                sleep(INPUT_PORT_READER_TIMEOUT_MILLS);
             }
         });
         messageListenerThread.start();

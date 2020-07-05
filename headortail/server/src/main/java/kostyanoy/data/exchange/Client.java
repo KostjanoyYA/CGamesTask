@@ -1,4 +1,4 @@
-package kostyanoy.dataexchange;
+package kostyanoy.data.exchange;
 
 import kostyanoy.game.Player;
 import ru.kostyanoy.connection.Connection;

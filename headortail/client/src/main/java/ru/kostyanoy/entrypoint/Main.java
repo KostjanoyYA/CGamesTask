@@ -2,24 +2,27 @@ package ru.kostyanoy.entrypoint;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.kostyanoy.dataexchange.ClientExchanger;
+import ru.kostyanoy.data.exchange.ClientExchanger;
 import ru.kostyanoy.ui.StartGUIFormer;
-import ru.kostyanoy.ui.VisualPresenter;
 
 import javax.swing.*;
 
 public class Main {
 
+    final static private int DEFAULT_PORT = 1234;
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
 
-        final int defaultPort = 1234;
         ClientExchanger serviceExchanger = new ClientExchanger();
 
-        VisualPresenter gui = createGUI();
+        StartGUIFormer gui = new StartGUIFormer();
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            JFrame.setDefaultLookAndFeelDecorated(true);
+            JDialog.setDefaultLookAndFeelDecorated(true);
+        });
 
-        while (!serviceExchanger.getConnection().connect(gui.askServerIP(), defaultPort)) {
+        while (!serviceExchanger.getConnection().connect(gui.askServerIP(), DEFAULT_PORT)) {
             gui.showMessage("The specified IP address is not available. Try again!");
         }
         gui.showMessage("Successful connection to the server");
@@ -34,14 +37,5 @@ public class Main {
                 | IllegalAccessException e) {
             log.warn(e.getMessage(), e);
         }
-    }
-
-    private static VisualPresenter createGUI() {
-        VisualPresenter gui = new StartGUIFormer();
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            JFrame.setDefaultLookAndFeelDecorated(true);
-            JDialog.setDefaultLookAndFeelDecorated(true);
-        });
-        return gui;
     }
 }

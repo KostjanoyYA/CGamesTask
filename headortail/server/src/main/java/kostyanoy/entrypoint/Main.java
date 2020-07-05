@@ -1,6 +1,6 @@
 package kostyanoy.entrypoint;
 
-import kostyanoy.dataexchange.ServerExchanger;
+import kostyanoy.data.exchange.ServerExchanger;
 import kostyanoy.game.Game;
 import kostyanoy.game.HeadOrTail;
 import kostyanoy.history.History;

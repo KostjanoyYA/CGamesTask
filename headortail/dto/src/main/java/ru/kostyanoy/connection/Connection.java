@@ -21,35 +21,33 @@ public class Connection {
     private Socket socket;
     private Thread pinger;
     private int attempts;
-    private AtomicBoolean isConnected;
+    private final AtomicBoolean isConnected;
     private static final Logger log = LoggerFactory.getLogger(Connection.class);
 
     static {
-        PING_TIMEOUT = 5000;
+        PING_TIMEOUT = 1000;
         PING_ATTEMPTS_LIMIT = 12;
     }
 
-    public String getInetAddress() {
-        return socket.getInetAddress().getHostAddress(); //TODO в исходнике return null???
+    public String getHostName() {
+        return socket.getInetAddress().getHostName();
     }
 
     public int getPort() {
         return socket.getPort();
     }
 
-    public static boolean customizeConnectionClass(String propertyFileName) {
+    public static void customizeConnectionClass(String propertyFileName) {
         if (propertyFileName == null
                 || propertyFileName.isEmpty()
                 || !PropertyLoader.load(propertyFileName, Connection.class)) {
             log.warn("Cannot load property file '{}' \nDefault configuration has been used", propertyFileName);
-            return false;
         }
         else {
             log.info("Property file '{}' has been loaded successfully", propertyFileName);
-            PING_TIMEOUT = Integer.parseInt(PropertyLoader.getPropertiesMap().get("ping.timeout"));
-            PING_ATTEMPTS_LIMIT = Integer.parseInt(PropertyLoader.getPropertiesMap().get("ping.attempts.limit"));
+            PING_TIMEOUT = Integer.parseInt(PropertyLoader.getPropertyMap().get("ping.timeout"));
+            PING_ATTEMPTS_LIMIT = Integer.parseInt(PropertyLoader.getPropertyMap().get("ping.attempts.limit"));
         }
-        return true;
     }
 
     public Connection() {

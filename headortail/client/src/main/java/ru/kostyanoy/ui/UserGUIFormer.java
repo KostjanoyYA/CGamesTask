@@ -1,6 +1,6 @@
 package ru.kostyanoy.ui;
 
-import ru.kostyanoy.dataexchange.ClientExchanger;
+import ru.kostyanoy.data.exchange.ClientExchanger;
 
 import javax.swing.*;
 import java.awt.*;

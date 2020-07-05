@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 public class PropertyLoader {
 
     private static final Logger log = LoggerFactory.getLogger(PropertyLoader.class);
-    private static Map<String, String> PropertiesMap;
+    private static Map<String, String> propertyMap;
 // TODO JavaDoc для класса
     public static boolean load(String propertyFileName, Class customerClass) {
         Properties properties = new Properties();
@@ -33,14 +33,14 @@ public class PropertyLoader {
         }
 
         Stream<Entry<Object, Object>> stream = properties.entrySet().stream();
-        PropertiesMap = stream.collect(Collectors.toMap(
+        propertyMap = stream.collect(Collectors.toMap(
                 e -> String.valueOf(e.getKey()),
                 e -> String.valueOf(e.getValue())));
 
         return true;
     }
 
-    public static Map<String, String> getPropertiesMap() {
-        return PropertiesMap;
+    public static Map<String, String> getPropertyMap() {
+        return propertyMap;
     }
 }

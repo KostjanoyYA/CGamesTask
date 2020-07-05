@@ -1,4 +1,4 @@
-package ru.kostyanoy.dataexchange;
+package ru.kostyanoy.data.exchange;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +17,11 @@ public class TestExchanger {
     private final String inetAddress;
     private final int port;
     private final List<ClientExchanger.ClientStatistics> statistics;
+    private static final int WAIT_FOR_ANSWER_TIMEOUT_MILLS = Connection.PING_TIMEOUT;
     private static final Logger log = LoggerFactory.getLogger(TestExchanger.class);
 
     public TestExchanger(ClientExchanger baseClient) {
-        this.inetAddress = baseClient.getConnection().getInetAddress();
+        this.inetAddress = baseClient.getConnection().getHostName();
         this.port = baseClient.getConnection().getPort();
         this.clients = new CopyOnWriteArrayList<>();
         this.timedClients = new ConcurrentHashMap<>();
@@ -45,7 +46,7 @@ public class TestExchanger {
                 continue;
             }
             clients.get(i).startExchange();
-            sleep(Connection.PING_TIMEOUT);
+            sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS);
             timedClients.put(LocalDateTime.now(), clients.get(i));
             while (!clients.get(i).hasCheckedNickName("Client_" + number++)) {
                 log.warn("Cannot use a name 'Client_{}' to connect", number - 1);
@@ -62,7 +63,7 @@ public class TestExchanger {
                     value.sendStake(getRandomBet(value.getPlayerState().getTokenCount()), getRandomChoice(value));
                     sleep(requestInterval);
                 }
-                sleep(Connection.PING_TIMEOUT);
+                sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS*2);
                 value.stopExchange();
 
                 value.getStatistics().ifPresent(statistics::add);
