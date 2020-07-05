@@ -10,6 +10,7 @@ import java.awt.event.WindowListener;
 public class TestGUIFormer {
 
     private JFrame frame;
+    private JButton startTestButton;
     private final StressTest stressTest;
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
 
@@ -89,7 +90,7 @@ public class TestGUIFormer {
         frame.add(buttonPanel, BorderLayout.SOUTH);
         buttonPanel.setLayout(new BorderLayout());
 
-        JButton startTestButton = new JButton("Start test");
+        startTestButton = new JButton("Start test");
         startTestButton.setMinimumSize(new Dimension(30, 100));
         startTestButton.setFocusable(false);
         startTestButton.setFont(FONT);
@@ -98,11 +99,11 @@ public class TestGUIFormer {
             if (startTestButton.isEnabled()) {
                 startTestButton.setEnabled(false);
                 startTestButton.setText("Test is in the progress...");
-                stressTest.startTest(startTestButton,
-                        Integer.parseInt(clientCountField.getText()),
-                        Integer.parseInt(requestIntervalField.getText()),
-                        Integer.parseInt(requestCountField.getText()));
             }
+            stressTest.startTest(
+                    Integer.parseInt(clientCountField.getText()),
+                    Integer.parseInt(requestIntervalField.getText()),
+                    Integer.parseInt(requestCountField.getText()));
         });
         buttonPanel.add(startTestButton, BorderLayout.CENTER);
 

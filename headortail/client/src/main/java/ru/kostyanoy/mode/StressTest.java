@@ -12,6 +12,7 @@ import javax.swing.*;
 public class StressTest implements GameMode {
     TestExchanger exchanger;
     TestGUIFormer gui;
+    private static final int REFRESH_TIMEOUT = 1000;
     private static final Logger log = LoggerFactory.getLogger(StressTest.class);
 
 
@@ -36,18 +37,12 @@ public class StressTest implements GameMode {
         exchanger.stopExchange();
     }
 
-    public void startTest(JButton startTestButton, int clientCount, int requestInterval, int requestCount) {
+    public void startTest(int clientCount, int requestInterval, int requestCount) {
         StatisticsGUIFormer tableGui = new StatisticsGUIFormer();
-
-        Thread buttonStateChanger = new Thread(() -> SwingUtilities.invokeLater(() -> { //TODO обновление статуса при нажатии кнопки
-            startTestButton.setEnabled(false);
-            startTestButton.setText("Test is in the progress...");
-        }));
-        buttonStateChanger.setDaemon(true);
-        buttonStateChanger.start();
-
-        exchanger.startExchange(clientCount, requestInterval, requestCount)
-                .ifPresentOrElse(tableGui::createTableFrame,
-                        () -> tableGui.showMessage("Statistics is empty"));
+        Thread longTermOperation = new Thread(() ->
+                exchanger.startExchange(clientCount, requestInterval, requestCount)
+                        .ifPresentOrElse(tableGui::createTableFrame,
+                                () -> tableGui.showMessage("Statistics is empty")));
+        longTermOperation.start();
     }
 }
