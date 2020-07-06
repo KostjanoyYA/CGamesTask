@@ -1,4 +1,4 @@
-package kostyanoy.game;
+package ru.kostyanoy.game;
 
 import java.util.List;
 

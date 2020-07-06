@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -14,33 +15,26 @@ import java.util.stream.Stream;
 public class PropertyLoader {
 
     private static final Logger log = LoggerFactory.getLogger(PropertyLoader.class);
-    private static Map<String, String> propertyMap;
-// TODO JavaDoc для класса
-    public static boolean load(String propertyFileName, Class customerClass) {
+
+    // TODO JavaDoc для класса
+    public static Optional<Map<String, String>> load(String propertyFileName, Class customerClass) {
+
         Properties properties = new Properties();
-        try {
-            try (InputStream propertiesStream = customerClass.getClassLoader().getResourceAsStream(propertyFileName)) {
-                if (propertiesStream == null) {
-                    log.warn("\"Unable to find {}", propertyFileName);
-                }
-                else {
-                    properties.load(propertiesStream);
-                }
+        try (InputStream propertyStream = customerClass.getClassLoader().getResourceAsStream(propertyFileName)) {
+            if (propertyFileName.isEmpty() || propertyStream == null) {
+                log.warn("\"Unable to find file '{}'", propertyFileName);
+                return Optional.empty();
+            } else {
+                properties.load(propertyStream);
             }
-        } catch (IOException e) {
+        } catch (NullPointerException | IOException e) {
             log.warn("{}:\n{}", e.getClass(), e.getMessage());
-            return false;
+            return Optional.empty();
         }
 
         Stream<Entry<Object, Object>> stream = properties.entrySet().stream();
-        propertyMap = stream.collect(Collectors.toMap(
+        return Optional.of(stream.collect(Collectors.toMap(
                 e -> String.valueOf(e.getKey()),
-                e -> String.valueOf(e.getValue())));
-
-        return true;
-    }
-
-    public static Map<String, String> getPropertyMap() {
-        return propertyMap;
+                e -> String.valueOf(e.getValue()))));
     }
 }

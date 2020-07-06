@@ -1,7 +1,7 @@
-package kostyanoy.game;
+package ru.kostyanoy.game;
 
 
 public enum HeadOrTailMoves {
     HEAD,
-    TAIL;
+    TAIL
 }

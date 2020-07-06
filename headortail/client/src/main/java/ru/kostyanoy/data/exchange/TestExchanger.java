@@ -14,14 +14,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class TestExchanger {
     private final List<ClientExchanger> clients;
     private final Map<LocalDateTime, ClientExchanger> timedClients;
-    private final String inetAddress;
+    private final String hostName;
     private final int port;
     private final List<ClientExchanger.ClientStatistics> statistics;
     private static final int WAIT_FOR_ANSWER_TIMEOUT_MILLS = Connection.PING_TIMEOUT;
     private static final Logger log = LoggerFactory.getLogger(TestExchanger.class);
 
     public TestExchanger(ClientExchanger baseClient) {
-        this.inetAddress = baseClient.getConnection().getHostName();
+        this.hostName = baseClient.getConnection().getHostName();
         this.port = baseClient.getConnection().getPort();
         this.clients = new CopyOnWriteArrayList<>();
         this.timedClients = new ConcurrentHashMap<>();
@@ -40,8 +40,8 @@ public class TestExchanger {
 
         int number = 0;
         for (int i = clients.size() - 1; i >= 0; i--) {
-            if (!clients.get(i).getConnection().connect(inetAddress, port)) {
-                log.warn("Cannot connect to {}:{}", inetAddress, port);
+            if (!clients.get(i).getConnection().connect(hostName, port)) {
+                log.warn("Cannot connect to {}:{}", hostName, port);
                 clients.remove(i);
                 continue;
             }

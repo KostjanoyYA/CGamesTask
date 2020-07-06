@@ -1,8 +1,8 @@
-package kostyanoy.game;
+package ru.kostyanoy.game;
 
-import kostyanoy.history.HistoryEvent;
 import ru.kostyanoy.entity.PlayerState;
 import ru.kostyanoy.entity.Stake;
+import ru.kostyanoy.history.HistoryEvent;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class RoundResult implements HistoryEvent {
         this.roundResultTime = cloneLocalDateTime(result.roundResultTime);
         this.stakeTime = cloneLocalDateTime(result.stakeTime);
         if (!(result.possibleMovies instanceof ArrayList
-                && (!result.possibleMovies.isEmpty() ? result.possibleMovies.get(0) != null : true ) )) {
+                && (result.possibleMovies.isEmpty() || result.possibleMovies.get(0) != null) )) {
             throw new ClassCastException("Possible movies List is not an ArrayList of Strings");
         }
         this.possibleMovies = (List<String>) ((ArrayList) result.possibleMovies).clone();

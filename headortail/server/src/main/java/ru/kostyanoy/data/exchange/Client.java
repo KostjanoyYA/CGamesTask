@@ -1,7 +1,7 @@
-package kostyanoy.data.exchange;
+package ru.kostyanoy.data.exchange;
 
-import kostyanoy.game.Player;
 import ru.kostyanoy.connection.Connection;
+import ru.kostyanoy.game.Player;
 
 public class Client {
     private Connection connection;

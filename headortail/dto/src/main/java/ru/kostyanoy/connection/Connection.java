@@ -10,6 +10,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Inet4Address;
 import java.net.Socket;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Connection {
@@ -39,15 +41,19 @@ public class Connection {
 
     public static void customizeConnectionClass(String propertyFileName) {
         if (propertyFileName == null
-                || propertyFileName.isEmpty()
-                || !PropertyLoader.load(propertyFileName, Connection.class)) {
+                || propertyFileName.isEmpty()) {
             log.warn("Cannot load property file '{}' \nDefault configuration has been used", propertyFileName);
+            return;
         }
-        else {
-            log.info("Property file '{}' has been loaded successfully", propertyFileName);
-            PING_TIMEOUT = Integer.parseInt(PropertyLoader.getPropertyMap().get("ping.timeout"));
-            PING_ATTEMPTS_LIMIT = Integer.parseInt(PropertyLoader.getPropertyMap().get("ping.attempts.limit"));
+        Optional<Map<String, String>> optionalMap = PropertyLoader.load(propertyFileName, Connection.class);
+        if (optionalMap.isEmpty()) {
+            log.warn("Cannot load property file '{}' \nDefault configuration has been used", propertyFileName);
+            return;
         }
+        Map<String, String> propertyMap = optionalMap.get();
+        log.info("Property file '{}' has been loaded successfully", propertyFileName);
+        PING_TIMEOUT = Integer.parseInt(propertyMap.get("ping.timeout"));
+        PING_ATTEMPTS_LIMIT = Integer.parseInt(propertyMap.get("ping.attempts.limit"));
     }
 
     public Connection() {
@@ -55,9 +61,9 @@ public class Connection {
         attempts = 0;
     }
 
-    public boolean connect(String ipAddress, int port) {
+    public boolean connect(String hostName, int port) {
         try {
-            socket = new Socket(Inet4Address.getByName(ipAddress), port);
+            socket = new Socket(Inet4Address.getByName(hostName), port);
             connect(socket);
         } catch (IOException | InterruptedException e) {
             log.warn(e.getMessage(), e);

@@ -18,7 +18,7 @@ public class SinglePlayer implements GameMode {
             throw new IllegalArgumentException("ClientExchanger is null");
         }
         UserGUIFormer gui = new UserGUIFormer(client);
-        if (initUserNickName(gui, client)) {
+        if (!initUserNickName(gui, client)) {
             return;
         }
 

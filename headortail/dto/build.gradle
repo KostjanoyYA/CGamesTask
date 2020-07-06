@@ -14,7 +14,7 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.10.1'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.1'
     implementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
-    testCompile 'org.junit.jupiter:junit-jupiter:5.5.2'
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.0-M1'
     testCompile 'org.mockito:mockito-core:3.1.0'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     runtime group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'

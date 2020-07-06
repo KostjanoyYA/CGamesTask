@@ -1,11 +1,11 @@
-package kostyanoy.entrypoint;
+package ru.kostyanoy.entrypoint;
 
-import kostyanoy.data.exchange.ServerExchanger;
-import kostyanoy.game.Game;
-import kostyanoy.game.HeadOrTail;
-import kostyanoy.history.History;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.kostyanoy.data.exchange.ServerExchanger;
+import ru.kostyanoy.game.Game;
+import ru.kostyanoy.game.HeadOrTail;
+import ru.kostyanoy.history.History;
 
 import java.util.Scanner;
 

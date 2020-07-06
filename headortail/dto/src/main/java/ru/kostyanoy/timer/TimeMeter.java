@@ -1,4 +1,4 @@
-package timer;
+package ru.kostyanoy.timer;
 
 public class TimeMeter {
     private long startTime;

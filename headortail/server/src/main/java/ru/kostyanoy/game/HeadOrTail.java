@@ -1,4 +1,4 @@
-package kostyanoy.game;
+package ru.kostyanoy.game;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,27 +1,30 @@
-package kostyanoy.data.exchange;
+package ru.kostyanoy.data.exchange;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import kostyanoy.game.Game;
-import kostyanoy.game.RoundResult;
-import kostyanoy.history.GameHistory;
-import kostyanoy.history.History;
-import kostyanoy.history.HistoryTaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.kostyanoy.connection.*;
+import ru.kostyanoy.game.Game;
+import ru.kostyanoy.game.RoundResult;
+import ru.kostyanoy.history.GameHistory;
+import ru.kostyanoy.history.History;
+import ru.kostyanoy.history.HistoryTaker;
 import ru.kostyanoy.propertyloader.PropertyLoader;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ServerExchanger implements HistoryTaker {
     private String senderName;
+    private static final String DEFAULT_NAME = "server1";
     private final List<Client> unnamedClients;
     private final ConcurrentHashMap<String, Client> clientsMap;
     private int serverPort;
@@ -42,14 +45,16 @@ public class ServerExchanger implements HistoryTaker {
     }
 
     public ServerExchanger(String propertyFileName, Game game) {
-        this("1", 0, game);
-        if (isNullOrEmpty(propertyFileName) || !PropertyLoader.load(propertyFileName, ServerExchanger.class)) {
-            log.warn("Cannot load property file '{}'", propertyFileName);
-            throw new IllegalArgumentException("Cannot load property file");
-        } else {
+        this(DEFAULT_NAME, 0, game);
+        Optional<Map<String, String>> optionalMap = PropertyLoader.load(propertyFileName, Connection.class);
+        if (optionalMap.isEmpty()) {
+            log.warn("Cannot load property file '{}' \nDefault configuration has been used", propertyFileName);
+        }
+        else {
             log.info("Property file '{}' has been loaded successfully", propertyFileName);
-            senderName = PropertyLoader.getPropertyMap().get("server.nickname");
-            serverPort = Integer.parseInt(PropertyLoader.getPropertyMap().get("server.port"));
+            Map<String, String> propertyMap = optionalMap.get();
+            senderName = propertyMap.get("server.nickname");
+            serverPort = Integer.parseInt(propertyMap.get("server.port"));
         }
         this.gameHistory = new GameHistory(senderName);
     }

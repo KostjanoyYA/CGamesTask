@@ -1,4 +1,4 @@
-package kostyanoy.game;
+package ru.kostyanoy.game;
 
 public enum HeadOrTailMessages {
     PLAYER_NOT_ALLOWED("is not allowed"),

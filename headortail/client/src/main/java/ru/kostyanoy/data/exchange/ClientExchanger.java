@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.kostyanoy.connection.*;
 import ru.kostyanoy.entity.PlayerState;
-import timer.TimeMeter;
+import ru.kostyanoy.timer.TimeMeter;
 
 import java.io.IOException;
 import java.time.Duration;
