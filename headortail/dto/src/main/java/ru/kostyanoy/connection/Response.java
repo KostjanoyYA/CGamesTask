@@ -9,12 +9,6 @@ public class Response extends Message {
 
     public Response() {    }
 
-    //TODO Убери конструктор, если он без него работает
-//    public Response(String senderName, MessageCategory category, Status status, long tokens) {
-//        super(senderName, category, tokens);
-//        this.status = status;
-//    }
-
     public void setStatus(Status status) { this.status = status;}
 
     public Status getStatus() {

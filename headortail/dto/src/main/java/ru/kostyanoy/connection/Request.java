@@ -1,7 +1,5 @@
 package ru.kostyanoy.connection;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
-
 public class Request extends Message {
 
     public Request() {}
@@ -14,7 +12,6 @@ public class Request extends Message {
         super(senderName, category, tokens, messageText);
     }
 
-    @JsonSetter("messageID") //TODO Убрать, если не влияет
     public void setMessageID(String messageID) {
         super.setMessageID(messageID);
     }

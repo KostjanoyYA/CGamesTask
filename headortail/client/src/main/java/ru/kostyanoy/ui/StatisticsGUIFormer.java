@@ -1,12 +1,9 @@
 package ru.kostyanoy.ui;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.kostyanoy.data.exchange.ClientExchanger;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Arrays;
 import java.util.List;
 
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -16,17 +13,12 @@ public class StatisticsGUIFormer {
     JFrame frame;
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
 
-    //TODO убрать log
-    private static final Logger log = LoggerFactory.getLogger(StatisticsGUIFormer.class);
-
     public void createTableFrame(List<ClientExchanger.ClientStatistics> statistics) {
         frame = new JFrame("Heads and Tails Test Statistics");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         Object[] columnsHeader = new String[]{"Пользователь", "Успешные запросы", "Неуспешные запросы", "Среднее время запроса, мс"};
         Object[][] cellTexts = new String[statistics.size()][columnsHeader.length];
-
-        log.debug("statistics = {}", statistics.toString());
 
         int rowNumber = 0;
 
@@ -37,7 +29,6 @@ public class StatisticsGUIFormer {
             cellTexts[rowNumber][3] = String.valueOf(element.getAverageRequestTime());
             rowNumber++;
         }
-        log.debug("cellTexts = {}", Arrays.deepToString(cellTexts));
 
         JPanel outputPanel = new JPanel();
         frame.add(outputPanel, BorderLayout.CENTER);

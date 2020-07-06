@@ -47,13 +47,11 @@ public class SinglePlayer implements GameMode {
 
         while (true) {
             userStringNickName = gui.askNickName();
-            log.debug("userStringNickName = {}", userStringNickName);
             if (client.hasCheckedNickName(userStringNickName)) {
                 break;
             }
             if (gui.askExit("Nickname '" + userStringNickName + "' is busy. Try again?") == 1) {
                 client.stopExchange();
-                log.debug("client.stopExchange() from Main");
                 return false;
             }
         }

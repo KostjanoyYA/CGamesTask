@@ -91,9 +91,6 @@ public class Connection {
                 while (!Thread.interrupted() && attempts <= PING_ATTEMPTS_LIMIT) {
                     isConnected.set(socket.getInetAddress().isReachable(PING_TIMEOUT));
                     attempts = isConnected.get() ? 0 : attempts++;
-
-                    log.debug("Ping attempt № {}", attempts);
-
                     Thread.sleep(PING_TIMEOUT);
                 }
             } catch (IOException | InterruptedException e) {
