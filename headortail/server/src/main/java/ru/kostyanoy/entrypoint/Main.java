@@ -41,6 +41,6 @@ public class Main {
             log.info("\n\n\n****Game history is empty*****\n");
             return;
         }
-        log.info("\n\n\n****Game history*****\n{}", history.toString());
+        log.info("\n\n\n****Game history****\n{}", history.toString());
     }
 }

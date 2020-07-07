@@ -117,7 +117,7 @@ public class ServerExchanger implements HistoryTaker {
      * @return {@code true} if name is correct and not registered, otherwise, {@code false}
      */
     public boolean hasCheckedNickName(String nickName) {
-        return !isNullOrEmpty(nickName) || !clientsMap.containsKey(nickName);
+        return !isNullOrEmpty(nickName) && !clientsMap.containsKey(nickName);
     }
 
     private void sleep(int timeout) {
