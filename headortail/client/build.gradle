@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'application'
 }
+mainClassName = "ru.kostyanoy.entrypoint.Main"
 
 version 'unspecified'
 
