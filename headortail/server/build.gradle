@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 version 'unspecified'
@@ -21,4 +22,8 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     runtime group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
     compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.7.25'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '6.4.1'
 }
