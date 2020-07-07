@@ -28,3 +28,7 @@ dependencies {
 task wrapper(type: Wrapper) {
     gradleVersion = '6.4.1'
 }
+
+run{
+    standardInput = System.in
+}
