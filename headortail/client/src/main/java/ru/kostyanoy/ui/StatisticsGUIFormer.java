@@ -24,7 +24,7 @@ public class StatisticsGUIFormer {
         frame = new JFrame("Heads and Tails Test Statistics");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        Object[] columnsHeader = new String[]{"Пользователь", "Успешные запросы", "Неуспешные запросы", "Среднее время запроса, мс"};
+        Object[] columnsHeader = new String[]{"User", "Successful requests", "Unsuccessful requests", "Average request time, ms"};
         Object[][] cellTexts = new String[statistics.size()][columnsHeader.length];
 
         int rowNumber = 0;
