@@ -7,6 +7,9 @@ import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
+/**
+ * Creates GUI for stress test parameters input
+ */
 public class TestGUIFormer {
 
     private JFrame frame;
@@ -18,6 +21,9 @@ public class TestGUIFormer {
         this.stressTest = stressTest;
     }
 
+    /**
+     * Creates the main window
+     */
     public void createMainWindow() throws ClassNotFoundException,
             UnsupportedLookAndFeelException,
             InstantiationException,

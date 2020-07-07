@@ -9,9 +9,11 @@ import ru.kostyanoy.ui.TestGUIFormer;
 
 import javax.swing.*;
 
+/**
+ * Performs stress test of the game
+ */
 public class StressTest implements GameMode {
-    TestExchanger exchanger;
-    TestGUIFormer gui;
+    private TestExchanger exchanger;
     private static final Logger log = LoggerFactory.getLogger(StressTest.class);
 
 
@@ -21,7 +23,7 @@ public class StressTest implements GameMode {
             throw new IllegalArgumentException("ClientExchanger is null");
         }
         exchanger = new TestExchanger(client);
-        gui = new TestGUIFormer(this);
+        TestGUIFormer gui = new TestGUIFormer(this);
 
         try {
             gui.createMainWindow();
@@ -30,10 +32,19 @@ public class StressTest implements GameMode {
         }
     }
 
+    /**
+     * Interrupts stress test and all of the responding data exchanges.
+     */
     public void stopTest() {
         exchanger.stopExchange();
     }
 
+    /**
+     * Begins stress test and all of the responding data exchanges, creates gui element with result of the data exchange
+     * @param clientCount required number of clients to create defined by UI
+     * @param requestInterval time interval between requests from a client defined by UI
+     * @param requestCount count of requests from a client defined by UI
+     */
     public void startTest(int clientCount, int requestInterval, int requestCount) {
         StatisticsGUIFormer tableGui = new StatisticsGUIFormer();
         Thread longTermOperation = new Thread(() ->

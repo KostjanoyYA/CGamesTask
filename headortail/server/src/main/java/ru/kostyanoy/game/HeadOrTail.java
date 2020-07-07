@@ -6,6 +6,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+/**
+ * Classical head or tail game:
+ * changes the player's state depending on the bet when the player's choice and the result of the coin toss match.
+ * Possible options for the round result: heads or tails.
+ * The probability of losing each of the results is 1/2
+ */
 public class HeadOrTail implements Game {
 
     private static final Random rnd = new Random();

@@ -1,5 +1,8 @@
 package ru.kostyanoy.entity;
 
+/**
+ * Contains players offer of a bet and a variant of the game move
+ */
 public class Stake implements Cloneable {
     private long tokens;
     private String option;

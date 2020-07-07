@@ -9,6 +9,9 @@ import java.awt.event.WindowListener;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
+/**
+ * Creates GUI for single player mode game
+ */
 public class UserGUIFormer {
 
     private JFrame frame;
@@ -22,18 +25,33 @@ public class UserGUIFormer {
         this.exchanger = exchanger;
     }
 
+    /**
+     * Gets access to UI element that needs to be updated during data exchange
+     * @return  {@link JLabel} that needs to be updated
+     */
     public JLabel getAccountLabel() {
         return accountLabel;
     }
 
+    /**
+     * Gets access to UI element that needs to be updated during data exchange
+     * @return  {@link JLabel} that needs to be updated
+     */
     public JLabel getRoundResultValue() {
         return roundResultValue;
     }
 
+    /**
+     * Gets access to UI element that needs to be updated during data exchange
+     * @return  {@link JComboBox} that needs to be updated
+     */
     public JComboBox getComboBox() {
         return comboBox;
     }
 
+    /**
+     * Creates the main window
+     */
     public void createMainWindow() {
 
         frame = new JFrame("Heads and tails client");
@@ -127,6 +145,10 @@ public class UserGUIFormer {
     }
 
     //PopUps
+    /**
+     * Creates pop up asking nickname for registration on the server
+     * @return  string result of user input
+     */
     public String askNickName() {
         return JOptionPane.showInputDialog(
                 frame,
@@ -135,6 +157,10 @@ public class UserGUIFormer {
                 JOptionPane.QUESTION_MESSAGE);
     }
 
+    /**
+     * Creates pop up asking exit of application
+     * @return  int result of user choice
+     */
     public int askExit(String message) {
         int userChoise = JOptionPane.showConfirmDialog(
                 frame,
@@ -147,6 +173,10 @@ public class UserGUIFormer {
         return userChoise;
     }
 
+    /**
+     * Creates the pop up with the given text
+     * @param message the shown text
+     */
     public void showMessage(String message) {
         showMessageDialog(frame, message);
     }

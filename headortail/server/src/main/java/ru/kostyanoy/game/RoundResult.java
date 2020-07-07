@@ -8,6 +8,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Contains {@link Game} round result
+ */
 public class RoundResult implements HistoryEvent {
     private PlayerState stateAfterRound;
     private String roundResultMovement;

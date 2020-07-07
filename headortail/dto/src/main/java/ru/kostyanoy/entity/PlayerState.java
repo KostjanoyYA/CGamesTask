@@ -2,6 +2,9 @@ package ru.kostyanoy.entity;
 
 import java.io.Serializable;
 
+/**
+ * Contains player state
+ */
 public class PlayerState implements Serializable, Cloneable {
     private long tokenCount;
 

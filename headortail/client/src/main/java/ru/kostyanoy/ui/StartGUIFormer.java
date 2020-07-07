@@ -10,6 +10,9 @@ import java.awt.*;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
+/**
+ * Creates GUI for choosing the game mode
+ */
 public class StartGUIFormer {
 
     private JFrame frame;
@@ -17,6 +20,10 @@ public class StartGUIFormer {
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
     private GameMode gameMode;
 
+    /**
+     * Creates the main window
+     * @param client {@link ClientExchanger} that needs input parameters to start exchange
+     */
     public void createMainWindow(ClientExchanger client) throws ClassNotFoundException,
             UnsupportedLookAndFeelException,
             InstantiationException,
@@ -64,10 +71,14 @@ public class StartGUIFormer {
 
 
     //PopUps
+    /**
+     * Creates pop up asking server host name
+     * @return  string result of user choice
+     */
     public String askServerIP() {
         String userString = JOptionPane.showInputDialog(
                 frame,
-                "Enter IP Address of the Server:",
+                "Enter host name of the Server:",
                 "Welcome to the " + name,
                 JOptionPane.QUESTION_MESSAGE);
         if (userString == null) {
@@ -76,6 +87,10 @@ public class StartGUIFormer {
         return userString;
     }
 
+    /**
+     * Creates the pop up with the given text
+     * @param message the shown text
+     */
     public void showMessage(String message) {
         showMessageDialog(frame, message);
     }

@@ -14,6 +14,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Works with sockets to establish connection and periodically check it.
+ */
 public class Connection {
     public static int PING_TIMEOUT;
     private static int PING_ATTEMPTS_LIMIT;
@@ -31,14 +34,26 @@ public class Connection {
         PING_ATTEMPTS_LIMIT = 12;
     }
 
+    /**
+     * Gets the host name of the socket connection 
+     * @return String of the host name
+     */
     public String getHostName() {
         return socket.getInetAddress().getHostName();
     }
 
+    /**
+     * Gets the port of the socket connection 
+     * @return port number int
+     */
     public int getPort() {
         return socket.getPort();
     }
 
+    /**
+     * Loads static properties from the specified property file 
+     * @param propertyFileName string file name included ".property".
+     */
     public static void customizeConnectionClass(String propertyFileName) {
         if (propertyFileName == null
                 || propertyFileName.isEmpty()) {
@@ -61,6 +76,12 @@ public class Connection {
         attempts = 0;
     }
 
+    /**
+     * Establish socket connection 
+     * @param hostName the specified host name
+     * @param port the port number
+     * @return Optional. Optional is empty for unsuccessful property file loading. Otherwise Optional contains a Map of properties.
+     */
     public boolean connect(String hostName, int port) {
         try {
             socket = new Socket(Inet4Address.getByName(hostName), port);
@@ -72,6 +93,12 @@ public class Connection {
         return true;
     }
 
+    /**
+     * Establish socket connection by socket received from the ServerSocket.
+     * Starts ping thread to update {@link Connection#isConnected()}
+     * @param socket socket received from the ServerSocket
+     * @return Connection that is ready for data exchange.
+     */
     public Connection connect(Socket socket) throws IOException, InterruptedException {
         this.socket = socket;
         setSocketIO();
@@ -106,10 +133,17 @@ public class Connection {
         log.info("Ping started");
     }
 
+    /**
+     * Method for getting the connection status
+     * @return Connection status: <b>true</b> if the socket's host is reachable, otherwise, <b>false</b>
+     */
     public boolean isConnected() {
         return isConnected.get();
     }
 
+    /**
+     * Interrupts pinger thread and close the socket.
+     */
     public void disconnect() {
         try {
             pinger.interrupt();
@@ -120,10 +154,18 @@ public class Connection {
         isConnected.set(false);
     }
 
+    /**
+     * Method for getting the input network stream
+     * @return network PrintWriter
+     */
     public PrintWriter getWriter() {
         return writer;
     }
 
+    /**
+     * Method for getting the output network stream
+     * @return network BufferedReader
+     */
     public BufferedReader getReader() {
         return reader;
     }

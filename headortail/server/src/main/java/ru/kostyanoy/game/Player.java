@@ -8,11 +8,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Representation of {@link Game} participant
+ */
 public class Player {
     private long account;
     private static long defaultAccount;
     private static final Logger log = LoggerFactory.getLogger(Player.class);
 
+    /**
+     * Loads static properties from the specified property file
+     * @param propertyFileName string file name included ".property".
+     */
     public static void customizePlayer(String propertyFileName) {
         if (propertyFileName == null
                 || propertyFileName.isEmpty()) {
@@ -33,6 +40,10 @@ public class Player {
         this.account = account;
     }
 
+    /**
+     * Create a {@link Player} with default parameters
+     * @return {@link Player}  with default parameter of {@link Player#getAccount()}
+     */
     public static Player createDefaultPlayer() {
         return new Player(defaultAccount);
     }

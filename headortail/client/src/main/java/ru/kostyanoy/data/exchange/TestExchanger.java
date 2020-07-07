@@ -11,6 +11,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Controls the data exchange process for automatically created clients
+ */
 public class TestExchanger {
     private final List<ClientExchanger> clients;
     private final Map<LocalDateTime, ClientExchanger> timedClients;
@@ -29,6 +32,15 @@ public class TestExchanger {
         baseClient.stopExchange();
     }
 
+    /**
+     * Creates clients and starts their data exchange
+     *
+     * @param clientCount     required number of clients to create
+     * @param requestInterval time interval between requests from a client
+     * @param requestCount count of requests from a client
+     * @return {@link Optional} of {@link List} containing {@link ru.kostyanoy.data.exchange.ClientExchanger.ClientStatistics}
+     * as result of data exchange
+     */
     public Optional<List<ClientExchanger.ClientStatistics>> startExchange(int clientCount, int requestInterval, int requestCount) {
         if (clientCount <= 0 || requestInterval <= 0 || requestCount <= 0) {
             throw new IllegalArgumentException("Arguments must be more than 0");
@@ -63,10 +75,8 @@ public class TestExchanger {
                     value.sendStake(getRandomBet(value.getPlayerState().getTokenCount()), getRandomChoice(value));
                     sleep(requestInterval);
                 }
-                sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS*2);
-                value.stopExchange();
-
-                value.getStatistics().ifPresent(statistics::add);
+                sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS * 2);
+                value.stopExchange().ifPresent(statistics::add);
             });
             sender.setName(value.getSenderName());
             sender.start();
@@ -80,7 +90,7 @@ public class TestExchanger {
     }
 
     private int getRandomBet(long max) {
-        return (int) (Math.random() * (Math.abs(max+2)));
+        return (int) (Math.random() * (Math.abs(max + 2)));
     }
 
     private String getRandomChoice(ClientExchanger client) {
@@ -97,6 +107,9 @@ public class TestExchanger {
         return client.getPossibleOptions()[(int) (Math.random() * max)];
     }
 
+    /**
+     * Stops data exchange for all of the clients
+     */
     public void stopExchange() {
         if (clients != null && !clients.isEmpty()) {
             clients.forEach(ClientExchanger::stopExchange);

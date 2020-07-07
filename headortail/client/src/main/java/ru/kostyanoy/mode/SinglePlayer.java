@@ -8,6 +8,9 @@ import ru.kostyanoy.ui.UserGUIFormer;
 import javax.swing.*;
 import java.util.Arrays;
 
+/**
+ * Performs single mode of the game
+ */
 public class SinglePlayer implements GameMode {
     private static final int REFRESH_TIMEOUT = 1000;
     private static final Logger log = LoggerFactory.getLogger(SinglePlayer.class);

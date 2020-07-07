@@ -22,6 +22,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * The server core of data exchange process parsing requests from clients and responding them
+ */
 public class ServerExchanger implements HistoryTaker {
     private String senderName;
     private static final String DEFAULT_NAME = "server1";
@@ -59,7 +62,7 @@ public class ServerExchanger implements HistoryTaker {
         this.gameHistory = new GameHistory(senderName);
     }
 
-    public ServerExchanger(String serverNickName, int serverPort, Game game) {
+    private ServerExchanger(String serverNickName, int serverPort, Game game) {
         mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         unnamedClients = new CopyOnWriteArrayList<>();
         clientsMap = new ConcurrentHashMap<>();
@@ -78,15 +81,23 @@ public class ServerExchanger implements HistoryTaker {
         this.game = game;
     }
 
+    /**
+     * Gets the server sender name
+     * @return server name
+     */
     public String getSenderName() {
         return senderName;
     }
 
+    /**
+     * Gets the port of the {@link ServerSocket} connection
+     * @return port number int
+     */
     public int getServerPort() {
         return serverPort;
     }
 
-    public void sendMessage(Client client, Message message) {
+    private void sendMessage(Client client, Message message) {
         try {
             client.getConnection().getWriter().println(mapper.writeValueAsString(message));
             client.getConnection().getWriter().flush();
@@ -100,6 +111,11 @@ public class ServerExchanger implements HistoryTaker {
         return (string == null || string.isEmpty());
     }
 
+    /**
+     * Checks whether the name is correct and whether it is registered on the server
+     * @param nickName suggested name
+     * @return {@code true} if name is correct and not registered, otherwise, {@code false}
+     */
     public boolean hasCheckedNickName(String nickName) {
         return !isNullOrEmpty(nickName) || !clientsMap.containsKey(nickName);
     }
@@ -112,6 +128,9 @@ public class ServerExchanger implements HistoryTaker {
         }
     }
 
+    /**
+     * Begins listening to the input requests
+     */
     public void startExchange() {
         try {
             serverSocket = new ServerSocket(serverPort);
@@ -172,6 +191,9 @@ public class ServerExchanger implements HistoryTaker {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stopExchange));
     }
 
+    /**
+     * Stops data exchange, close {@link Connection} for all of the clients
+     */
     public void stopExchange() {
         socketListenerThread.interrupt();
         messageListenerThread.interrupt();

@@ -8,6 +8,7 @@
 *.iml
 *.iws
 */out/
+/out/
 
 # Mac
 .DS_Store
@@ -45,9 +46,6 @@ gradle-app.setting
 # BlueJ files
 *.ctxt
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
 # Package Files #
 *.jar
 *.war
@@ -62,4 +60,3 @@ hs_err_pid*
 
 #Other files
 *.exe
-*.log

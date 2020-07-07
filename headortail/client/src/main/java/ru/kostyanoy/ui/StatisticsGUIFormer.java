@@ -8,11 +8,18 @@ import java.util.List;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
+/**
+ * Creates GUI for {@link ru.kostyanoy.data.exchange.ClientExchanger.ClientStatistics} representation
+ */
 public class StatisticsGUIFormer {
 
     JFrame frame;
     private static final Font FONT = new Font("Tahoma", Font.PLAIN, 14);
 
+    /**
+     * Creates a window with statistics result
+     * @param statistics {@link ru.kostyanoy.data.exchange.ClientExchanger.ClientStatistics} that needs to be shown
+     */
     public void createTableFrame(List<ClientExchanger.ClientStatistics> statistics) {
         frame = new JFrame("Heads and Tails Test Statistics");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -54,7 +61,11 @@ public class StatisticsGUIFormer {
         frame.setVisible(true);
     }
 
-    public void showMessage(String text) {
-        showMessageDialog(frame, text);
+    /**
+     * Creates the pop up with the given text
+     * @param message the shown text
+     */
+    public void showMessage(String message) {
+        showMessageDialog(frame, message);
     }
 }

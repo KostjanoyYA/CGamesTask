@@ -17,6 +17,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * The client core of data exchange process sending requests to the server, parsing responses and reacting them
+ */
 public class ClientExchanger {
     private final Connection connection;
     private final PlayerState playerState;
@@ -64,6 +67,9 @@ public class ClientExchanger {
         previousRoundResult = "";
     }
 
+    /**
+     * Begins client message exchange with the server: listens to the responses and controls that response time is not up.
+     */
     public void startExchange() {
         messageListenerThread = new Thread(() -> {
             while (!Thread.interrupted()) {
@@ -84,20 +90,26 @@ public class ClientExchanger {
         log.debug("serviceExchangeThread started");
     }
 
+    /**
+     * Gets the internal {@link Connection}
+     *
+     * @return {@link Connection}
+     */
     public Connection getConnection() {
         return connection;
     }
 
+    /**
+     * Gets the current player state defined by server
+     *
+     * @return {@link PlayerState}
+     */
     public PlayerState getPlayerState() {
         return playerState;
     }
 
-    public Optional<ClientStatistics> getStatistics() {
-        return statistics;
-    }
 
-
-    public void sendMessage(Message message) {
+    private void sendMessage(Message message) {
         try {
             connection.getWriter().println(mapper.writeValueAsString(message));
             connection.getWriter().flush();
@@ -116,6 +128,12 @@ public class ClientExchanger {
         }
     }
 
+    /**
+     * Sends a request to register this client on the server with the given name
+     *
+     * @param nickName name for the registration attempt
+     * @return <b>true</b> if the name was accepted by server
+     */
     public boolean hasCheckedNickName(String nickName) {
         if (isRemoteAnswering.get() && !isSenderNameAccepted.get()) {
             sendMessage(new Request(nickName, MessageCategory.GREETING, 0));
@@ -124,7 +142,12 @@ public class ClientExchanger {
         return isSenderNameAccepted.get();
     }
 
-    public void stopExchange() {
+    /**
+     * Stops client message exchange with the server, close {@link Connection}
+     *
+     * @return {@link Optional} of {@link ClientStatistics} as the result of data exchange
+     */
+    public Optional<ClientStatistics> stopExchange() {
         sendMessage(new Request(senderName, MessageCategory.GOODBYE, playerState.getTokenCount()));
         sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS);
 
@@ -135,9 +158,10 @@ public class ClientExchanger {
         if (internalStatistics != null) {
             statistics = Optional.of(internalStatistics);
         }
+        return statistics;
     }
 
-    public void checkExchange() {
+    private void checkExchange() {
         requestDelayTimer.startTimer();
         while (!requestDelayTimer.hasTimesUp()) {
             if (!connection.isConnected()) {
@@ -163,11 +187,16 @@ public class ClientExchanger {
         stopExchange();
     }
 
-    public void sendStake(long stake, String option) {
-        if (option == null || option.isEmpty() || stake <= 0) return;
+    /**
+     * Sends bet request to the server
+     * @param bet count of bet tokens
+     * @param option string variant of one of posible options (see {@link ClientExchanger#getPossibleOptions()})
+     */
+    public void sendStake(long bet, String option) {
+        if (option == null || option.isEmpty() || bet <= 0) return;
 
         if (isRemoteAnswering.get() && isSenderNameAccepted.get()) {
-            sendMessage(new Request(senderName, MessageCategory.STAKE, stake, option));
+            sendMessage(new Request(senderName, MessageCategory.STAKE, bet, option));
         }
     }
 
@@ -265,18 +294,33 @@ public class ClientExchanger {
                 : new String[0];
     }
 
+    /**
+     * Gets the possible options defined by server
+     * @return string representation array of possible options
+     */
     public String[] getPossibleOptions() {
         return possibleOptions;
     }
 
+    /**
+     * Gets the result of the completed round defined by server
+     * @return string representation of the result
+     */
     public String getPreviousRoundResult() {
         return previousRoundResult;
     }
 
+    /**
+     * Gets the client sender name
+     * @return the name accepted by server or else {@code null}
+     */
     public String getSenderName() {
         return senderName;
     }
 
+    /**
+     * Contains statistics of client's data exchange
+     */
     public class ClientStatistics {
         private long successfulRequestCount;
         private long totalTime;

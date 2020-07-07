@@ -3,6 +3,9 @@ package ru.kostyanoy.data.exchange;
 import ru.kostyanoy.connection.Connection;
 import ru.kostyanoy.game.Player;
 
+/**
+ * Server representation of client
+ */
 public class Client {
     private Connection connection;
     private String nickName;

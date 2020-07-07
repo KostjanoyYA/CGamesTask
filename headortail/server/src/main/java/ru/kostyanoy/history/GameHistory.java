@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Collects history of {@link ru.kostyanoy.game.Game}
+ */
 public class GameHistory implements History {
     private final String serverNickName;
     private final Map<String, List<HistoryEvent>> playerHistories;
@@ -21,11 +24,6 @@ public class GameHistory implements History {
                 : playerHistories.get(nickName);
         newList.add(event.clone());
         playerHistories.put(nickName, newList);
-    }
-
-    @Override
-    public List<HistoryEvent> getEvents(String nickName) {
-        return playerHistories.get(nickName);
     }
 
     @Override

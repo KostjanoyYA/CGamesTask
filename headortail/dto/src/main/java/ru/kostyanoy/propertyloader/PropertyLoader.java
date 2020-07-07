@@ -13,17 +13,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Class loads property file by <b>file name</b> found it in"resources" directory in the package of <b>Class</b> location.
+ * Loads property file by file name found it in"resources" directory in the package of Class location.
  */
 public class PropertyLoader {
 
     private static final Logger log = LoggerFactory.getLogger(PropertyLoader.class);
 
     /**
-     * Method returns Optional. Optional is empty for unsuccessful property file loading.
-     * Otherwise Optional contains a Map of properties.
-     * @param propertyFileName is string file name included ".property".
-     * @param customerClass is the name of class that is in the package which stores the property file.
+     * Loads optional map of parameters and its corresponding values
+     * @param propertyFileName string file name included ".property"
+     * @param customerClass the name of class that is in the package which stores the property file
+     * @return {@link Optional}. {@link Optional} is empty for unsuccessful property file loading. Otherwise Optional contains a {@link Map} of properties
      */
     public static Optional<Map<String, String>> load(String propertyFileName, Class customerClass) {
 
