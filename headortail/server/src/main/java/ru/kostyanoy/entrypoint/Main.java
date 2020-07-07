@@ -22,12 +22,18 @@ public class Main {
         log.info("{}: The port {} is used", server.getSenderName(), server.getServerPort());
 
         try (Scanner reader = new Scanner(System.in)) {
-            while (!reader.nextLine().equals("stop server")) {
-                try {
+            try {
+                while (true) {
                     Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    log.warn(e.getMessage(), e);
+                    if (!reader.hasNext()) {
+                        continue;
+                    }
+                    if (reader.nextLine().equals("stop server")) {
+                        break;
+                    }
                 }
+            } catch (InterruptedException e) {
+                log.warn(e.getMessage(), e);
             }
         }
         server.stopExchange();
