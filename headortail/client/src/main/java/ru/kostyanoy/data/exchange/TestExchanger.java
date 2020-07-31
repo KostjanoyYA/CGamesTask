@@ -8,8 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 
 /**
  * Controls the data exchange process for automatically created clients
@@ -37,7 +36,7 @@ public class TestExchanger {
      *
      * @param clientCount     required number of clients to create
      * @param requestInterval time interval between requests from a client
-     * @param requestCount count of requests from a client
+     * @param requestCount    count of requests from a client
      * @return {@link Optional} of {@link List} containing {@link ru.kostyanoy.data.exchange.ClientExchanger.ClientStatistics}
      * as result of data exchange
      */
@@ -69,23 +68,28 @@ public class TestExchanger {
             return Optional.empty();
         }
 
+
+        ExecutorService executor = Executors.newFixedThreadPool(timedClients.size());
+
         timedClients.forEach((key, value) -> {
-            Thread sender = new Thread(() -> {
+            Runnable sender = () -> {
+                Thread.currentThread().setName(value.getSenderName());
                 for (int i = 0; i < requestCount; i++) {
                     value.sendStake(getRandomBet(value.getPlayerState().getTokenCount()), getRandomChoice(value));
                     sleep(requestInterval);
                 }
                 sleep(WAIT_FOR_ANSWER_TIMEOUT_MILLS * 2);
                 value.stopExchange().ifPresent(statistics::add);
-            });
-            sender.setName(value.getSenderName());
-            sender.start();
-            try {
-                sender.join();
-            } catch (InterruptedException e) {
-                log.warn(e.getMessage(), e);
-            }
+            };
+            executor.execute(sender);
         });
+        executor.shutdown();
+
+        try {
+            executor.awaitTermination(WAIT_FOR_ANSWER_TIMEOUT_MILLS * clientCount * requestCount, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            log.warn(e.getMessage(), e);
+        }
         return Optional.of(statistics);
     }
 
